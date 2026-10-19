@@ -177,7 +177,7 @@
 </section>
 
 
-<div id="workspace" hidden><div class="session"><span id="account-email"></span><button id="logout" type="button">Sair</button></div><header>
+<div id="workspace" hidden><div class="session"><span id="account-email"></span><button id="admin-open" type="button" hidden>Administrar usuários</button><button id="logout" type="button">Sair</button></div><header>
   <div class="brand">
     <small>CAMILO CONTABILIDADE</small>
     <h1>Painel de Ferramentas</h1>
@@ -190,6 +190,21 @@
 
 
 </div>
+<dialog id="admin-dialog" aria-labelledby="admin-title">
+  <div class="admin-heading"><div><span class="auth-eyebrow">CONTROLE DE ACESSO</span><h2 id="admin-title">Usuários e permissões</h2></div><button id="admin-close" type="button">Fechar</button></div>
+  <p>Crie contas com e-mail e senha definidos. O e-mail funciona como login e não precisa ter uma caixa de entrada. Sem uma caixa acessível, a recuperação por e-mail não funciona.</p>
+  <form id="admin-create" class="admin-create">
+    <h3>Nova conta</h3>
+    <label>E-mail de acesso<input name="email" type="email" value="adm@camilocontabilidade.com.br" autocomplete="off" maxlength="254" required></label>
+    <label>Senha definida<input name="password" type="password" minlength="10" maxlength="128" autocomplete="new-password" required><small>De 10 a 128 caracteres. Não é enviada por e-mail.</small></label>
+    <label>Permissão<select name="role"><option value="member">Usuário</option><option value="admin">Administrador</option></select></label>
+    <button type="submit">Criar conta</button>
+  </form>
+  <p id="admin-message" role="status" aria-live="polite"></p>
+  <div class="admin-list-heading"><h3>Contas cadastradas</h3><button id="admin-refresh" type="button">Atualizar lista</button></div>
+  <div class="admin-table-wrap"><table><caption class="sr-only">Usuários cadastrados e permissões de acesso</caption><thead><tr><th scope="col">Usuário</th><th scope="col">Situação</th><th scope="col">Criado em</th><th scope="col">Último acesso</th><th scope="col">Permissão</th></tr></thead><tbody id="admin-users"></tbody></table></div>
+  <div class="admin-pagination"><button id="admin-prev" type="button">Anterior</button><span id="admin-page"></span><button id="admin-next" type="button">Próxima</button></div>
+</dialog>
 <script type="module" src="/auth.js"></script>
 </body>
 </html>
