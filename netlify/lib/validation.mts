@@ -1,5 +1,5 @@
 export function validTool(id: string | null): id is string {
-  return ['cartao_v8', 'fornecedores', 'invest_facil', 'folha_ca_doro', 'conciliador_fiscal', 'cartao_majepac_uniao'].includes(id ?? '');
+  return ['cartao_v8', 'fornecedores', 'invest_facil', 'folha_ca_doro', 'conciliador_fiscal', 'conciliacao_sieg_dominio', 'cartao_majepac_uniao'].includes(id ?? '');
 }
 export function validState(value: unknown): value is { fields: Record<string, unknown>; storage: Record<string, string> } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;

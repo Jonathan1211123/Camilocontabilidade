@@ -18,8 +18,12 @@ Os dados de uma ferramenta têm limite de 1 MB. Se duas abas ou dispositivos edi
 
 ## Estrutura e validação
 
-`public/` contém a interface; `src/auth.js` integra a autenticação; `private/tools/` contém as seis ferramentas originais extraídas do HTML; `netlify/functions/` fornece o acesso protegido e a persistência. O HTML original na raiz é mantido como referência e não é publicado.
+`public/` contém a interface; `src/auth.js` integra a autenticação; `private/tools/` contém as seis ferramentas originais extraídas do HTML e a Conciliação SIEG × Domínio; `netlify/functions/` fornece o acesso protegido e a persistência. O HTML original na raiz é mantido como referência e não é publicado.
 
 O deploy executa `npm run prepare-site` para empacotar o cliente de autenticação. A plataforma aplica as migrações de `netlify/database/migrations/` automaticamente. Não aplique essas migrações manualmente.
 
 Use `npm test` para verificar bloqueio de endpoints anônimos, validação das entradas, restauração e salvamento de campos e prevenção de conflitos entre abas. Use `npm run check` para verificar os tipos. O fluxo completo de e-mail requer um deploy e um convite real enviado pelo responsável.
+
+## Conciliação SIEG × Domínio
+
+Após entrar na conta, abra a aba **Conciliação SIEG × Domínio**. Selecione a lista de XMLs do SIEG e os relatórios de acompanhamento de entradas e saídas do Domínio. A ferramenta identifica os arquivos, compara as notas e permite baixar a conferência em Excel. As planilhas são processadas no navegador e devem ser selecionadas novamente ao reabrir a ferramenta.

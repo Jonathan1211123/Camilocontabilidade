@@ -1,12 +1,12 @@
 
-// Cada ferramenta é embutida em base64 exatamente como foi entregue, sem nenhuma
-// alteração de código, e carregada isolada dentro do seu próprio iframe.
+// As ferramentas são carregadas pelo endpoint protegido e abertas em seus próprios iframes.
 const TOOLS = [
   { id: "inicio",        label: "Início",                     type: "home" },
   { id: "cartao_v8",     label: "Lançador Fatura Cartão" },
   { id: "fornecedores",  label: "Conciliação de Fornecedores" },
   { id: "invest_facil",  label: "Extrator Invest Fácil" },
   { id: "folha_ca_doro", label: "Folha de Pagamento" },
+  { id: "conciliacao_sieg_dominio", label: "Conciliação SIEG × Domínio" },
   { id: "conciliador_fiscal", label: "Conciliador Fiscal x Contábil" },
   { id: "cartao_majepac_uniao", label: "Cartão Maquininha (MAJEPAC/União)" }
 ];
@@ -41,6 +41,7 @@ const HOME_HTML = `
         <li><b>Conciliação de Fornecedores</b> — casa notas e pagamentos do razão de fornecedores pela lógica FIFO e aponta divergências.</li>
         <li><b>Extrator Invest Fácil</b> — lê extratos do Bradesco e separa os lançamentos de Resgate e Aplicação Invest Fácil.</li>
         <li><b>Folha de Pagamento</b> — gera lançamentos de folha de pagamento no leiaute do Domínio para Cristais Poços de Caldas, Oficina de Arte e Fogo, Sopro de Arte e CA D'Oro.</li>
+        <li><b>Conciliação SIEG × Domínio</b> — compara a lista de XMLs do SIEG com os acompanhamentos de entradas e saídas do Domínio, aponta pendências e divergências e exporta a conferência em Excel.</li>
         <li><b>Conciliador Fiscal x Contábil</b> — confere se o Resumo por Acumulador (fiscal) bate com o balancete contábil, por conta e por unidade.</li>
         <li><b>Cartão Maquininha (MAJEPAC/União)</b> — lê os relatórios de cartão de crédito/débito (sistema LBC) e gera o lançamento diário no leiaute do Domínio.</li>
       </ul>
