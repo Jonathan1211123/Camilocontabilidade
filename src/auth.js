@@ -25,6 +25,10 @@ async function showWorkspace(user) {
   $('auth').hidden = true;
   $('workspace').hidden = false;
   if (!loaded) { await import('/panel.js'); loaded = true; }
+  if (user.roles?.includes('admin')) {
+    const { setupAdmin } = await import('./admin.js');
+    setupAdmin();
+  }
 }
 window.camiloApi = async (url, options) => {
   if (!await getUser()) { location.reload(); throw new Error('session'); }
