@@ -1,0 +1,23 @@
+{
+  "name": "camilo-painel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare-site": "node scripts/prepare.mjs",
+    "test": "node --import tsx --test tests/*.test.mts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@netlify/database": "^2.0.1",
+    "@netlify/functions": "^6.0.2",
+    "@netlify/identity": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.1.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

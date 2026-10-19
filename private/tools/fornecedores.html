@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferramenta de Conciliação de Fornecedores — Camilo Contabilidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+  :root{
+    --navy: #0C1A41;
+    --navy-2: #16295E;
+    --gold: #C08B4F;
+    --gold-light: #E4C599;
+    --paper: #F3EEE2;
+    --paper-2: #EAE2CE;
+    --rule: #C9BFA0;
+    --ink: #221D14;
+    --ink-soft: #5B5442;
+    --ok: #2F6F4E;
+    --ok-bg: #E1EEE5;
+    --attn: #9C3B26;
+    --attn-bg: #F4E1DA;
+    --old: #8A5A20;
+    --old-bg: #F1E3C9;
+    --tar: #5B7DB1;
+    --tar-bg: #E3EAF5;
+    --card-shadow: 0 1px 0 rgba(12,26,65,0.06), 0 8px 24px rgba(12,26,65,0.06);
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body{
+    background-image:
+      linear-gradient(var(--paper) 0px, var(--paper) 27px, var(--rule) 27px, var(--rule) 28px);
+    background-size: 100% 28px;
+    background-attachment: local;
+    min-height: 100vh;
+  }
+
+  ::selection{ background: var(--gold-light); }
+  .num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- TOPBAR (sempre visível) ---------- */
+  .topbar{
+    background: var(--navy);
+    color: #EFEAD9;
+    padding: 18px 6vw;
+    border-bottom: 3px solid var(--gold);
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .topbar .brand{
+    font-family:'Source Serif 4', serif;
+    font-weight:700; font-size: 19px;
+  }
+  .topbar .brand span{ color: var(--gold-light); font-weight:400; font-size:13px; display:block; font-family:'IBM Plex Mono',monospace; letter-spacing:0.08em; margin-top:2px;}
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing:0.03em;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    padding: 9px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .btn:hover{ background: var(--gold); color: var(--navy); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* ---------- UPLOAD SCREEN ---------- */
+  #uploadScreen{
+    max-width: 720px;
+    margin: 8vh auto;
+    padding: 0 6vw;
+    text-align:center;
+  }
+  #uploadScreen .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    letter-spacing: 0.18em; text-transform: uppercase; font-size: 11px;
+    color: var(--ink-soft); margin-bottom: 14px;
+  }
+  #uploadScreen h1{
+    font-family:'Source Serif 4', serif; font-weight:700;
+    font-size: clamp(26px, 4vw, 38px);
+    color: var(--navy);
+    margin: 0 0 14px;
+    line-height:1.15;
+  }
+  #uploadScreen p.lead{
+    color: var(--ink-soft); font-size: 14.5px; line-height:1.6;
+    max-width: 520px; margin: 0 auto 40px;
+  }
+
+  .dropzone{
+    background: #FBF8F0;
+    border: 2px dashed var(--rule);
+    border-radius: 4px;
+    box-shadow: var(--card-shadow);
+    padding: 48px 24px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    position: relative;
+  }
+  .dropzone.dragover{ border-color: var(--gold); background: #FEFBF3; }
+  .dropzone svg{ opacity:0.55; margin-bottom: 14px; }
+  .dropzone .dz-title{ font-weight:600; font-size:15px; margin-bottom:6px; }
+  .dropzone .dz-sub{ font-size:12.5px; color: var(--ink-soft); }
+  .dropzone input{ display:none; }
+
+  .filename-chip{
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    font-family:'IBM Plex Mono', monospace;
+    margin-top: 18px;
+  }
+
+  .status-line{
+    margin-top: 22px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    min-height: 20px;
+  }
+  .status-line.error{ color: var(--attn); font-weight:600; }
+
+  .spinner{
+    display:inline-block; width:14px; height:14px;
+    border: 2px solid var(--rule); border-top-color: var(--navy);
+    border-radius:50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px; vertical-align: -2px;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .req-note{
+    margin-top: 34px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align:left;
+    background: rgba(192,139,79,0.08);
+    border-left: 3px solid var(--gold);
+    padding: 12px 16px;
+    border-radius: 2px;
+    line-height:1.6;
+  }
+  .req-note b{ color: var(--ink); }
+
+  /* ---------- HERO (resultado) ---------- */
+  header.hero{
+    background: var(--navy);
+    background-image: repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 28px);
+    color: #EFEAD9;
+    padding: 46px 6vw 40px;
+    position: relative;
+    border-bottom: 3px solid var(--gold);
+    overflow: hidden;
+  }
+  .hero-inner{
+    max-width: 1180px; margin: 0 auto;
+    display:flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 28px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; letter-spacing: 0.18em; text-transform: uppercase;
+    font-size: 11px; color: var(--gold-light); margin-bottom: 10px;
+  }
+  h1.title{
+    font-family:'Source Serif 4', serif; font-weight: 700;
+    font-size: clamp(26px, 4vw, 42px); margin: 0 0 6px; line-height: 1.05; letter-spacing: -0.01em;
+  }
+  .meta-line{ font-size: 13.5px; color: #C8C2AE; display:flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+  .meta-line span b{ color: #EFEAD9; font-weight: 600; }
+
+  .stamp{
+    flex-shrink: 0; width: 148px; height: 148px;
+    border: 3px solid var(--gold); border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    transform: rotate(-9deg); position: relative; opacity: 0.94;
+  }
+  .stamp::before{ content:""; position:absolute; inset: 9px; border: 1.5px solid var(--gold); border-radius: 50%; }
+  .stamp-text{ font-family:'IBM Plex Mono', monospace; font-weight:600; color: var(--gold-light); text-align:center; font-size: 14px; letter-spacing: 0.06em; line-height: 1.35; }
+  .stamp-text .big{ display:block; font-size: 26px; color:#EFEAD9; font-weight:700; }
+
+  section.kpis{ max-width: 1180px; margin: -26px auto 0; padding: 0 6vw; position: relative; z-index: 2; }
+  .kpi-card{
+    background: #FBF8F0; border: 1px solid var(--rule); box-shadow: var(--card-shadow);
+    border-radius: 3px; padding: 22px 26px 18px; display: grid; grid-template-columns: repeat(6, 1fr);
+  }
+  .kpi{ padding: 0 18px; border-left: 1px solid var(--rule); }
+  .kpi:first-child{ border-left: none; padding-left: 0; }
+  .kpi-num{
+    font-family:'Source Serif 4', serif; font-weight: 700; font-size: 34px; line-height: 1;
+    border-bottom: 3px double var(--ink); padding-bottom: 8px; display: inline-block;
+  }
+  .kpi-num.ok{ color: var(--ok); } .kpi-num.attn{ color: var(--attn); } .kpi-num.old{ color: var(--old); } .kpi-num.tar{ color: var(--tar); }
+  .kpi-label{ margin-top: 9px; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+  @media (max-width: 900px){ .kpi-card{ grid-template-columns: repeat(2, 1fr); row-gap: 22px; } .kpi{ border-left:none; padding-left:0; } }
+
+  main{ max-width: 1180px; margin: 0 auto; padding: 46px 6vw 90px; }
+  .section-note{ font-size: 14px; color: var(--ink-soft); max-width: 760px; margin: 0 0 26px; line-height: 1.55; }
+
+  .tabs{ display:flex; gap: 6px; margin-bottom: 0; flex-wrap: wrap; position: relative; z-index: 2; }
+  .tab{
+    font-family:'IBM Plex Mono', monospace; font-size: 12.5px; letter-spacing: 0.02em;
+    background: var(--paper-2); border: 1px solid var(--rule); border-bottom: none; color: var(--ink-soft);
+    padding: 11px 18px 10px; border-radius: 5px 5px 0 0; cursor: pointer;
+    transition: background .15s ease, color .15s ease; position: relative; top: 1px;
+  }
+  .tab .dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right: 7px; vertical-align: middle; }
+  .tab[data-status="ok"] .dot{ background: var(--ok); }
+  .tab[data-status="correto"] .dot{ background: var(--ok); }
+  .tab[data-status="attn"] .dot{ background: var(--attn); }
+  .tab[data-status="old"] .dot{ background: var(--old); }
+  .tab[data-status="tar"] .dot{ background: var(--tar); }
+  .tab[data-status="div"] .dot{ background: var(--navy); }
+  .tab.active{ background: #FBF8F0; color: var(--ink); font-weight: 600; border-color: var(--rule); }
+  .tab:not(.active):hover{ background: #E4DAC0; }
+
+  .panel{ background: #FBF8F0; border: 1px solid var(--rule); box-shadow: var(--card-shadow); padding: 26px 26px 10px; }
+  .panel-head{ display:flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
+  .panel-title{ font-family:'Source Serif 4', serif; font-size: 21px; font-weight: 600; color: var(--navy); }
+
+  .search-box{
+    display:flex; align-items:center; border: 1px solid var(--rule); border-radius: 3px;
+    background: #fff; padding: 7px 12px; gap: 8px; min-width: 260px;
+  }
+  .search-box input{ border: none; outline: none; font-family:'IBM Plex Sans', sans-serif; font-size: 13.5px; width: 100%; background: transparent; color: var(--ink); }
+  .search-box svg{ flex-shrink:0; opacity:0.45; }
+
+  table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th{
+    text-align: left; font-family:'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-soft); border-bottom: 2px solid var(--ink);
+    padding: 0 10px 10px; cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  thead th:hover{ color: var(--navy); }
+  thead th.num, td.num{ text-align: right; }
+  tbody td{ padding: 10px 10px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  tbody tr:hover td{ background: rgba(192,139,79,0.08); }
+  td.conta{ color: var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size: 12px; }
+  td.fornecedor{ font-weight: 500; }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.04em; padding: 3px 9px 3px 7px; border-radius: 20px; border: 1px solid; white-space: nowrap;
+  }
+  .badge.ok{ color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
+  .badge.attn{ color: var(--attn); border-color: var(--attn); background: var(--attn-bg); }
+
+  /* verificação manual */
+  th.verif-col, td.verif-cell{ text-align:center; }
+  .check-wrap{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none;
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft);
+  }
+  .check-wrap input[type="checkbox"]{
+    width:15px; height:15px; accent-color: var(--ok); cursor:pointer; margin:0;
+  }
+  tr.row-verificado td{ background: rgba(47,111,78,0.06); }
+  tr.row-verificado td.fornecedor{ color: var(--ink-soft); }
+  .btn-mini{
+    font-family:'IBM Plex Mono', monospace; font-size: 11.5px;
+    background: transparent; border: 1px solid var(--rule); color: var(--ink-soft);
+    padding: 7px 12px; border-radius: 3px; cursor:pointer; white-space:nowrap;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .btn-mini:hover{ border-color: var(--gold); color: var(--ink); }
+  .btn-mini.active{ background: var(--navy); color:#EFEAD9; border-color: var(--navy); }
+  .progress-chip{
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .progress-chip .bar{
+    width:70px; height:6px; background: var(--rule); border-radius:4px; overflow:hidden; display:inline-block;
+  }
+  .progress-chip .bar > span{ display:block; height:100%; background: var(--ok); }
+
+  .empty-state{ text-align:center; padding: 50px 20px 60px; }
+  .empty-state .stamp2{
+    width: 110px; height:110px; border: 3px solid var(--ok); border-radius: 50%; margin: 0 auto 18px;
+    display:flex; align-items:center; justify-content:center; transform: rotate(-8deg); position: relative;
+  }
+  .empty-state .stamp2::before{ content:""; position:absolute; inset:8px; border:1.5px solid var(--ok); border-radius:50%; }
+  .empty-state .stamp2 span{ font-family:'IBM Plex Mono', monospace; font-weight:700; color: var(--ok); font-size: 13px; letter-spacing:0.05em; text-align:center; line-height:1.3; }
+  .empty-state p{ color: var(--ink-soft); font-size: 14px; max-width: 460px; margin: 0 auto; }
+
+  .foot-note{ padding: 14px 10px 20px; font-size: 11.5px; color: var(--ink-soft); display:flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+  footer{ text-align:center; padding: 30px 6vw 60px; font-size: 12px; color: var(--ink-soft); }
+  footer .rule{ max-width: 200px; margin: 0 auto 18px; border: none; border-top: 1px solid var(--rule); }
+
+  @media (max-width: 640px){
+    .panel{ padding: 20px 16px 10px; }
+    table{ font-size: 12px; }
+    thead th, tbody td{ padding: 8px 6px; }
+    .kpi-card{ padding: 18px 16px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Ferramenta de Conciliação de Fornecedores
+    <span>CAMILO CONTABILIDADE &middot; roda 100% no seu navegador, nenhum arquivo é enviado a servidores</span>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn" id="btnRelatorio" style="display:none;">📊 Gerar Relatório Completo (Excel)</button>
+    <button class="btn" id="btnNovo" style="display:none;">Processar outro arquivo</button>
+  </div>
+</div>
+
+<!-- ===================== TELA DE UPLOAD ===================== -->
+<div id="uploadScreen">
+  <div class="eyebrow">Razão de Fornecedores &middot; Domínio Sistemas</div>
+  <h1>Envie o razão para conciliar</h1>
+  <p class="lead">
+    Casa cada nota fiscal com os pagamentos seguintes (lógica FIFO), confere se o saldo
+    recalculado bate com o Saldo-Exercício do Domínio, e separa o que está correto do que
+    precisa de atenção.
+  </p>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept=".xls,.xlsx">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+    <div class="dz-title">Arraste o arquivo aqui ou clique para escolher</div>
+    <div class="dz-sub">.xls ou .xlsx — exportação de "Razão" do Domínio Sistemas</div>
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+
+  <div class="req-note">
+    <b>Requisito do arquivo:</b> exportação do relatório "Razão" do Domínio (menu de Contabilidade),
+    com uma conta por fornecedor. O layout esperado tem, por conta: "Conta:" com o código e nome do
+    fornecedor, uma linha "SALDO ANTERIOR", e lançamentos com Data / Histórico / Débito / Crédito / Saldo.
+    <br><br>
+    <b>Se o arquivo for .xls antigo e der erro de leitura:</b> algumas exportações do Domínio geram um
+    binário fora do padrão que o navegador não consegue abrir. Abra o arquivo no Excel ou LibreOffice,
+    use "Salvar como" → <b>.xlsx</b>, e envie o novo arquivo aqui.
+  </div>
+</div>
+
+<!-- ===================== RESULTADO (dashboard) ===================== -->
+<div id="resultScreen" style="display:none;">
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="eyebrow">Conciliação de Fornecedores &middot; Razão Contábil</div>
+        <h1 class="title" id="tituloEmpresa">—</h1>
+        <div class="meta-line">
+          <span>CNPJ <b id="metaCnpj">—</b></span>
+          <span>Período <b id="metaPeriodo">—</b></span>
+          <span>Fornecedores analisados <b id="metaTotal">—</b></span>
+        </div>
+      </div>
+      <div class="stamp">
+        <div class="stamp-text"><span class="big" id="stampNum">0</span>DIVERGÊNCIAS</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi-card">
+      <div class="kpi">
+        <div class="kpi-num ok" id="kpiFecham">0</div>
+        <div class="kpi-label">Contas fechadas<br>(saldo final zerado)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num ok" id="kpiCorreto">0</div>
+        <div class="kpi-label">Em aberto — correto<br>(só o mês mais recente do período)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num attn" id="kpiAtencao">0</div>
+        <div class="kpi-label">Em aberto — atenção<br>(mês(es) anterior(es) do período)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num old" id="kpiAnterior">0</div>
+        <div class="kpi-label">Com saldo de período(s)<br>anterior(es) pendente</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num" id="kpiSaldoTotal">R$ 0</div>
+        <div class="kpi-label">Saldo total em aberto<br>ao final do período</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num tar" id="kpiTarifa">0</div>
+        <div class="kpi-label">Pagamentos com provável<br>tarifa bancária embutida</div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="fecham" data-status="ok"><span class="dot"></span>Contas Fechadas</div>
+      <div class="tab" data-tab="correto" data-status="correto"><span class="dot"></span>Em Aberto — Correto</div>
+      <div class="tab" data-tab="atencao" data-status="attn"><span class="dot"></span>Em Aberto — Atenção</div>
+      <div class="tab" data-tab="anterior" data-status="old"><span class="dot"></span>Saldo Anterior Pendente</div>
+      <div class="tab" data-tab="tarifa" data-status="tar"><span class="dot"></span>Tarifas Identificadas</div>
+      <div class="tab" data-tab="div" data-status="div"><span class="dot"></span>Divergências</div>
+    </div>
+
+    <div class="panel">
+
+      <div id="panel-fecham" class="panel-body">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Contas Fechadas</div>
+            <div class="section-note" style="margin:4px 0 0;">Saldo-Exercício = R$ 0,00 ao final do período. Nada pendente com estes fornecedores.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="progress-chip" id="progress-fecham"></span>
+            <button class="btn-mini" data-hide-toggle="fecham">Ocultar verificados</button>
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input type="text" data-search="fecham" placeholder="Buscar fornecedor ou conta…">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="table-fecham">
+            <thead><tr>
+              <th data-key="conta">Conta</th>
+              <th data-key="fornecedor">Fornecedor</th>
+              <th class="num" data-key="saldo_anterior">Saldo Anterior</th>
+              <th class="num" data-key="notas">Notas (Créditos)</th>
+              <th class="num" data-key="baixas">Baixas (Débitos)</th>
+              <th class="num" data-key="saldo_final">Saldo Final</th>
+              <th class="verif-col">Verificado</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="foot-note"><span id="count-fecham"></span><span>Ordenar: clique no cabeçalho da coluna</span></div>
+      </div>
+
+      <div id="panel-correto" class="panel-body" style="display:none;">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Em Aberto — Correto</div>
+            <div class="section-note" style="margin:4px 0 0;">Saldo em aberto composto somente por notas do mês mais recente do período — fluxo normal, dentro do prazo.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="progress-chip" id="progress-correto"></span>
+            <button class="btn-mini" data-hide-toggle="correto">Ocultar verificados</button>
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input type="text" data-search="correto" placeholder="Buscar fornecedor ou conta…">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="table-correto">
+            <thead><tr>
+              <th data-key="conta">Conta</th>
+              <th data-key="fornecedor">Fornecedor</th>
+              <th class="num" data-key="saldo_final">Saldo em Aberto</th>
+              <th class="num" data-key="qtde_abertas">Nº Notas</th>
+              <th>Status</th>
+              <th class="verif-col">Verificado</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="foot-note"><span id="count-correto"></span><span>Ordenar: clique no cabeçalho da coluna</span></div>
+      </div>
+
+      <div id="panel-atencao" class="panel-body" style="display:none;">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Em Aberto — Atenção</div>
+            <div class="section-note" style="margin:4px 0 0;">Saldo em aberto inclui mês(es) anterior(es) ao mais recente do período. Vale revisar o motivo do não pagamento.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="progress-chip" id="progress-atencao"></span>
+            <button class="btn-mini" data-hide-toggle="atencao">Ocultar verificados</button>
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input type="text" data-search="atencao" placeholder="Buscar fornecedor ou conta…">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="table-atencao">
+            <thead><tr>
+              <th data-key="conta">Conta</th>
+              <th data-key="fornecedor">Fornecedor</th>
+              <th class="num" data-key="saldo_final">Saldo em Aberto</th>
+              <th class="num" data-key="qtde_abertas">Nº Notas</th>
+              <th>Status</th>
+              <th class="verif-col">Verificado</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="foot-note"><span id="count-atencao"></span><span>Ordenar: clique no cabeçalho da coluna</span></div>
+      </div>
+
+      <div id="panel-anterior" class="panel-body" style="display:none;">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Saldo Anterior Pendente</div>
+            <div class="section-note" style="margin:4px 0 0;">Fornecedores cujo saldo em aberto contém valor transportado de período(s) anteriores ao relatório — as pendências mais antigas da carteira.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="progress-chip" id="progress-anterior"></span>
+            <button class="btn-mini" data-hide-toggle="anterior">Ocultar verificados</button>
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input type="text" data-search="anterior" placeholder="Buscar fornecedor ou conta…">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="table-anterior">
+            <thead><tr>
+              <th data-key="conta">Conta</th>
+              <th data-key="fornecedor">Fornecedor</th>
+              <th class="num" data-key="valor_original">Saldo Anterior Original</th>
+              <th class="num" data-key="valor_aberto">Ainda em Aberto</th>
+              <th class="num" data-key="saldo_final">Saldo Final da Conta</th>
+              <th class="verif-col">Verificado</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="foot-note"><span id="count-anterior"></span><span>Ordenar: clique no cabeçalho da coluna</span></div>
+      </div>
+
+      <div id="panel-tarifa" class="panel-body" style="display:none;">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Tarifas Identificadas</div>
+            <div class="section-note" style="margin:4px 0 0;">Pagamentos que fecharam uma nota com excesso de R$ 1,00 a R$ 5,00 (abaixo disso é só arredondamento da nota). "Confirmada" quando o mesmo fornecedor repete o padrão pelo menos 2 vezes no período; "Ocorrência única" quando só aconteceu uma vez — vale conferir antes de assumir que é tarifa.</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <div class="search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input type="text" data-search="tarifa" placeholder="Buscar fornecedor ou conta…">
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="table-tarifa">
+            <thead><tr>
+              <th data-key="conta">Conta</th>
+              <th data-key="fornecedor">Fornecedor</th>
+              <th data-key="data">Data do Pagamento</th>
+              <th data-key="notas_str">Nota(s) Fechada(s)</th>
+              <th class="num" data-key="valor_pago">Valor Pago</th>
+              <th class="num" data-key="excesso">Excesso (Tarifa)</th>
+              <th data-key="status_str">Status</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="foot-note"><span id="count-tarifa"></span><span>Ordenar: clique no cabeçalho da coluna</span></div>
+      </div>
+
+      <div id="panel-div" class="panel-body" style="display:none;">
+        <div class="empty-state" id="divContent"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <hr class="rule">
+    Camilo Contabilidade &middot; conciliação gerada a partir do razão de fornecedores exportado do Domínio Sistemas
+  </footer>
+</div>
+
+<script>
+/* ============================================================================
+   PARSER DO RAZÃO (replica a lógica do parser Python, direto no navegador)
+   ============================================================================ */
+const NF_RE = /NF\.?\s*N[ºo°]\s*([0-9]+)/i;
+
+function isDateCell(v){ return v instanceof Date && !isNaN(v); }
+
+function parsearRazao(aoa){
+  let empresa=null, cnpj=null, periodo=null;
+  const contas = [];
+  let atual = null;
+
+  for(const r of aoa){
+    const c0 = r[0];
+    if(c0 === 'Empresa:'){ empresa = r[2]; }
+    else if(c0 === 'C.N.P.J.:'){ cnpj = r[2]; }
+    else if(c0 === 'Período:' || c0 === 'Período:\r'){ periodo = r[2]; }
+    else if(c0 === 'Conta:'){
+      if(atual) contas.push(atual);
+      atual = { conta: r[2], nome: (r[5]||'').toString().trim(), saldo_anterior: 0, eventos: [] };
+    }
+    else if((c0===undefined || c0===null) && r[2]==='SALDO ANTERIOR' && atual){
+      atual.saldo_anterior = r[12] || 0;
+    }
+    else if(atual && isDateCell(c0)){
+      const hist = (r[2]||'').toString().trim();
+      const m = NF_RE.exec(hist);
+      atual.eventos.push({
+        data: c0, historico: hist,
+        debito: r[8], credito: r[9], saldo_reportado: r[12],
+        nf: m ? m[1] : null,
+      });
+    }
+  }
+  if(atual) contas.push(atual);
+
+  if(contas.length === 0){
+    throw new Error("Nenhuma conta encontrada. Verifique se é uma exportação de 'Razão' do Domínio Sistemas com o layout padrão.");
+  }
+  return { empresa, cnpj, periodo, contas };
+}
+
+function periodoParaDatas(periodoStr){
+  try{
+    const [iniS, fimS] = periodoStr.split('-').map(s=>s.trim());
+    const parseData = s => { const [d,m,y] = s.split('/').map(Number); return new Date(y, m-1, d); };
+    return { ini: parseData(iniS), fim: parseData(fimS) };
+  }catch(e){ return { ini:null, fim:null }; }
+}
+
+/* ============================================================================
+   CONCILIAÇÃO FIFO (nota x pagamento) POR CONTA
+   ============================================================================ */
+// Excesso de pagamento até esse valor, ao fechar uma nota, é tratado como provável
+// tarifa bancária embutida (tarifas observadas ficam abaixo de R$ 4 — ajuste aqui
+// se algum banco cobrar mais).
+const LIMITE_TARIFA_BANCARIA = 5;
+// Excesso abaixo desse valor é só arredondamento de centavos da própria nota, não tarifa.
+const LIMITE_ARREDONDAMENTO = 1;
+
+function conciliar(dadosRazao){
+  const resumo=[], abertos=[], divergencias=[], revisao=[];
+
+  for(const conta of dadosRazao.contas){
+    const saldoAnt = conta.saldo_anterior || 0;
+    const fila = [];
+    let creditoLivre = 0;
+
+    if(saldoAnt < -0.005){
+      fila.push({ nf:'SALDO ANTERIOR', data:null, historico:'SALDO ANTERIOR (saldo transportado de período anterior)',
+                  valor_original: Math.abs(saldoAnt), valor_restante: Math.abs(saldoAnt) });
+    } else if(saldoAnt > 0.005){
+      creditoLivre += saldoAnt;
+    }
+
+    let totalNotas=0, totalBaixas=0;
+    const eventosOverpay=[];
+
+    for(const ev of conta.eventos){
+      const cred = ev.credito || 0, deb = ev.debito || 0;
+
+      if(cred > 0.005){
+        totalNotas += cred;
+        // Cada nota entra na fila pelo valor cheio. Um crédito sobrando de um pagamento
+        // anterior (ex: tarifa) NÃO abate a nota nova automaticamente — ele fica separado
+        // em creditoLivre e só entra na conta no saldo total, igual o Domínio faz de fato
+        // (o valor "em aberto" de cada NF não é reduzido por sobra de outro lançamento).
+        fila.push({ nf: ev.nf || '(sem nº NF)', data: ev.data, historico: ev.historico,
+                    valor_original: cred, valor_restante: cred });
+      }
+
+      if(deb > 0.005){
+        totalBaixas += deb;
+        // Um pagamento nunca é dividido entre notas de números diferentes: ele casa só
+        // com a nota mais antiga em aberto. Se pagar menos que ela, a nota continua
+        // aberta (parcial) para o próximo mês. Se pagar a mais, fecha essa nota só e
+        // o excesso vira crédito à parte (tarifa se for pequeno, revisão se for grande) —
+        // nunca é usado pra fechar a nota seguinte da fila.
+        if(fila.length){
+          const nota = fila[0];
+          if(deb + 0.005 >= nota.valor_restante){
+            const excesso = deb - nota.valor_restante;
+            fila.shift();
+            if(excesso > 0.005){
+              creditoLivre += excesso;
+              eventosOverpay.push({ data: ev.data, historico: ev.historico, valor: excesso,
+                                     valorPago: deb, notasFechadas: [nota] });
+            }
+          } else {
+            nota.valor_restante -= deb;
+          }
+        } else {
+          // Não há nota em aberto para casar — pagamento avulso, vira crédito e vai pra revisão.
+          creditoLivre += deb;
+          eventosOverpay.push({ data: ev.data, historico: ev.historico, valor: deb,
+                                 valorPago: deb, notasFechadas: [] });
+        }
+      }
+    }
+
+    const saldoRecalc = -fila.reduce((s,n)=>s+n.valor_restante,0) + creditoLivre;
+    let saldoReportado = conta.eventos.length ? conta.eventos[conta.eventos.length-1].saldo_reportado : saldoAnt;
+    if(saldoReportado === null || saldoReportado === undefined) saldoReportado = saldoAnt;
+    const diferenca = Math.round((saldoRecalc - saldoReportado)*100)/100;
+    const status = Math.abs(diferenca) <= 0.01 ? 'OK' : 'DIVERGENTE';
+
+    resumo.push({
+      conta: conta.conta, fornecedor: conta.nome,
+      saldo_anterior: round2(saldoAnt), total_notas: round2(totalNotas), total_baixas: round2(totalBaixas),
+      saldo_final: round2(saldoReportado), saldo_recalculado: round2(saldoRecalc),
+      diferenca, qtde_abertas: fila.length, credito_nao_aplicado: round2(creditoLivre), status,
+    });
+
+    for(const n of fila){
+      abertos.push({ conta: conta.conta, fornecedor: conta.nome, nf: n.nf, data: n.data, historico: n.historico,
+                     valor_original: round2(n.valor_original), valor_aberto: round2(n.valor_restante) });
+    }
+
+    if(status === 'DIVERGENTE'){
+      divergencias.push({ conta: conta.conta, fornecedor: conta.nome, saldo_final: round2(saldoReportado),
+                           saldo_recalculado: round2(saldoRecalc), diferenca,
+                           causa: eventosOverpay.length ? 'Pagamento(s) maior(es) que notas em aberto' : 'Verificar manualmente' });
+    }
+    // Confirma tarifa só se o MESMO fornecedor repetir esse padrão de excesso pequeno
+    // pelo menos 2 vezes no período analisado — uma ocorrência isolada pode ser coincidência
+    // e vai para revisão manual em vez de ser cravada como tarifa.
+    const candidatosTarifa = eventosOverpay.filter(oe =>
+      oe.valor >= LIMITE_ARREDONDAMENTO && oe.valor <= LIMITE_TARIFA_BANCARIA && oe.notasFechadas.length > 0);
+    const tarifaConfirmada = candidatosTarifa.length >= 2;
+
+    for(const oe of eventosOverpay){
+      // Excesso de só centavos (< R$ 1,00) é arredondamento da própria nota, não tarifa.
+      // Excesso entre R$ 1,00 e o limite de tarifa, fechando nota, só é confirmado como tarifa
+      // bancária embutida se o mesmo fornecedor repetir o padrão (ver tarifaConfirmada acima) —
+      // senão fica para revisão manual como ocorrência única. Excesso maior, ou sem nenhuma
+      // nota pra casar, sempre precisa revisão manual.
+      const ehCandidatoTarifa = oe.valor >= LIMITE_ARREDONDAMENTO && oe.valor <= LIMITE_TARIFA_BANCARIA && oe.notasFechadas.length > 0;
+      let tipo;
+      if(oe.valor < LIMITE_ARREDONDAMENTO) tipo = 'arredondamento';
+      else if(ehCandidatoTarifa && tarifaConfirmada) tipo = 'tarifa';
+      else if(ehCandidatoTarifa) tipo = 'revisar_ocorrencia_unica';
+      else tipo = 'revisar';
+      const motivos = {
+        arredondamento: 'Diferença de centavos ao fechar a nota — arredondamento, não é tarifa',
+        tarifa: 'Pagamento levemente maior que a(s) nota(s) fechada(s) — tarifa bancária confirmada (padrão repetido nesse fornecedor)',
+        revisar_ocorrencia_unica: 'Pagamento levemente maior que a(s) nota(s) fechada(s) — só uma ocorrência nesse fornecedor no período, confirmar se é tarifa',
+        revisar: 'Pagamento maior que as notas em aberto disponíveis — verificar manualmente',
+      };
+      revisao.push({
+        conta: conta.conta, fornecedor: conta.nome, data: oe.data, historico: oe.historico,
+        valor_pago: round2(oe.valorPago),
+        notas_fechadas: oe.notasFechadas.map(n => ({ nf: n.nf, valor: round2(n.valor_original) })),
+        excesso: round2(oe.valor),
+        tipo, motivo: motivos[tipo],
+      });
+    }
+  }
+  return { resumo, abertos, divergencias, revisao };
+}
+function round2(v){ return Math.round(v*100)/100; }
+
+/* ============================================================================
+   CLASSIFICAÇÃO: fechadas / correto (mês mais recente) / atenção / saldo anterior
+   ============================================================================ */
+function classificar(resultado, dadosRazao){
+  const { resumo, abertos } = resultado;
+  const { fim } = periodoParaDatas(dadosRazao.periodo || '');
+  const mesRecente = fim ? { ano: fim.getFullYear(), mes: fim.getMonth() } : null;
+
+  const abertosPorConta = {};
+  for(const a of abertos){ (abertosPorConta[a.conta] ??= []).push(a); }
+
+  const fechadas=[], naoFecham=[];
+  for(const r of resumo){ (Math.abs(r.saldo_final) <= 0.01 ? fechadas : naoFecham).push(r); }
+
+  const anterioresPorConta = {};
+  for(const [conta, itens] of Object.entries(abertosPorConta)){
+    const semData = itens.filter(it => it.data === null);
+    if(semData.length) anterioresPorConta[conta] = semData;
+  }
+  const contasComSaldoAnterior = new Set(Object.keys(anterioresPorConta));
+
+  function soMesRecente(itens){
+    if(!mesRecente) return false;
+    for(const it of itens){
+      if(it.data === null) return false;
+      if(it.data.getFullYear() !== mesRecente.ano || it.data.getMonth() !== mesRecente.mes) return false;
+    }
+    return true;
+  }
+
+  // Tarifas bancárias (Cesta Pj, Tarifa Bancária, manutenção de conta etc.) costumam ser
+  // lançadas como nota no mês M mas só são baixadas no pagamento do mês M+1, atrasando
+  // um mês por causa do ciclo de cobrança do banco — não por atraso real do fornecedor.
+  const TARIFA_RE = /tarifa|cesta\s*pj|manuten[çc][ãa]o\s*de\s*conta|pacote\s*de\s*servi[çc]os/i;
+  function todosPorTarifa(itens){
+    return itens.length > 0 && itens.every(it => TARIFA_RE.test(it.historico || ''));
+  }
+
+  const correto=[], atencao=[], tarifa=[];
+  for(const r of naoFecham){
+    const itens = abertosPorConta[r.conta] || [];
+    if(itens.length && soMesRecente(itens)){
+      correto.push(r);
+    } else if(todosPorTarifa(itens)){
+      tarifa.push(r);
+    } else {
+      atencao.push(r);
+    }
+  }
+
+  const resumoByConta = {};
+  for(const r of resumo) resumoByConta[r.conta] = r;
+
+  const saldoAnteriorDetalhe = [];
+  for(const [conta, itens] of Object.entries(anterioresPorConta)){
+    const r = resumoByConta[conta];
+    const valOrig = itens.reduce((s,x)=>s+x.valor_original,0);
+    const valAberto = itens.reduce((s,x)=>s+x.valor_aberto,0);
+    saldoAnteriorDetalhe.push({ conta, fornecedor: itens[0].fornecedor, valor_original: round2(valOrig),
+                                 valor_aberto: round2(valAberto), saldo_final: r.saldo_final });
+  }
+  saldoAnteriorDetalhe.sort((a,b)=>b.valor_aberto - a.valor_aberto);
+
+  return {
+    fechadas: fechadas.sort((a,b)=>a.fornecedor.localeCompare(b.fornecedor)),
+    correto: correto.sort((a,b)=>a.saldo_final - b.saldo_final),
+    atencao: atencao.sort((a,b)=>a.saldo_final - b.saldo_final),
+    saldo_anterior: saldoAnteriorDetalhe,
+    contas_com_saldo_anterior: contasComSaldoAnterior,
+  };
+}
+
+/* ============================================================================
+   UI: upload, leitura do arquivo, orquestração
+   ============================================================================ */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const statusLine = document.getElementById('statusLine');
+const uploadScreen = document.getElementById('uploadScreen');
+const resultScreen = document.getElementById('resultScreen');
+const btnNovo = document.getElementById('btnNovo');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('dragover');
+  if(e.dataTransfer.files.length) processarArquivo(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if(e.target.files.length) processarArquivo(e.target.files[0]); });
+
+btnNovo.addEventListener('click', () => {
+  resultScreen.style.display = 'none';
+  uploadScreen.style.display = 'block';
+  btnNovo.style.display = 'none';
+  document.getElementById('btnRelatorio').style.display = 'none';
+  fileInput.value = '';
+  statusLine.textContent = '';
+  statusLine.classList.remove('error');
+});
+
+function processarArquivo(file){
+  statusLine.classList.remove('error');
+  statusLine.innerHTML = '<span class="spinner"></span>Lendo "' + file.name + '"…';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let wb, ws, aoa;
+    try{
+      const data = new Uint8Array(e.target.result);
+      wb = XLSX.read(data, { type:'array', cellDates:true });
+      const wsName = wb.SheetNames && wb.SheetNames[0];
+      ws = wsName ? wb.Sheets[wsName] : undefined;
+      aoa = ws ? XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null }) : [];
+    }catch(err){
+      mostrarErroFormato(file.name, err.message);
+      return;
+    }
+
+    // Arquivo abriu mas não trouxe nenhuma célula legível — indica um .xls
+    // binário fora do padrão (alguns exports do Domínio geram um OLE
+    // "malformado, mas tolerado" que só o Excel/LibreOffice conseguem ler).
+    if(!ws || !aoa || aoa.length === 0){
+      mostrarErroFormato(file.name, null);
+      return;
+    }
+
+    statusLine.innerHTML = '<span class="spinner"></span>Conciliando lançamentos…';
+
+    setTimeout(() => {
+      try{
+        const dadosRazao = parsearRazao(aoa);
+        const resultado = conciliar(dadosRazao);
+        const classif = classificar(resultado, dadosRazao);
+        renderizarResultado(dadosRazao, resultado, classif);
+        uploadScreen.style.display = 'none';
+        resultScreen.style.display = 'block';
+        btnNovo.style.display = 'inline-block';
+        document.getElementById('btnRelatorio').style.display = 'inline-block';
+      }catch(err){
+        statusLine.innerHTML = 'Erro: ' + err.message;
+        statusLine.classList.add('error');
+      }
+    }, 30);
+  };
+  reader.onerror = () => { statusLine.textContent = 'Erro ao ler o arquivo.'; statusLine.classList.add('error'); };
+  reader.readAsArrayBuffer(file);
+
+  function mostrarErroFormato(nomeArquivo, detalhe){
+    statusLine.classList.add('error');
+    statusLine.innerHTML = `
+      Não foi possível ler as células de "${nomeArquivo}" no navegador.<br>
+      <span style="display:block; margin-top:6px; font-weight:400; color:var(--ink-soft);">
+      Algumas exportações antigas do Domínio geram um .xls binário fora do padrão que só o
+      Excel ou o LibreOffice conseguem abrir corretamente — ferramentas em JavaScript (como
+      esta página) não conseguem. <b>Solução:</b> abra o arquivo no Excel ou LibreOffice Calc,
+      use "Salvar como" e escolha o formato <b>.xlsx</b>, depois envie o novo arquivo aqui.
+      </span>`;
+  }
+}
+
+/* ============================================================================
+   RENDERIZAÇÃO DO DASHBOARD
+   ============================================================================ */
+function fmtMoney(v){
+  const n = Number(v)||0;
+  return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtMoneySigned(v){
+  const n = Number(v)||0;
+  const s = Math.abs(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return (n < 0 ? '-' : '') + 'R$ ' + s;
+}
+
+let DATA = null;
+let ULTIMO = null; // guarda dadosRazao/resultado/classif completos para o relatório detalhado
+const state = {
+  fecham: {sortKey:'fornecedor', sortDir:1, filter:'', hideVerified:false},
+  correto: {sortKey:'saldo_final', sortDir:1, filter:'', hideVerified:false},
+  atencao: {sortKey:'saldo_final', sortDir:1, filter:'', hideVerified:false},
+  anterior: {sortKey:'valor_aberto', sortDir:-1, filter:'', hideVerified:false},
+  tarifa: {sortKey:'excesso', sortDir:-1, filter:'', hideVerified:false},
+};
+
+/* ---- verificação manual (persistida no navegador via localStorage) ---- */
+function verifKey(conta){
+  return 'concil_verif::' + (DATA.cnpj||'') + '::' + (DATA.periodo||'') + '::' + conta;
+}
+function isVerificado(conta){
+  try{ return localStorage.getItem(verifKey(conta)) === '1'; }catch(e){ return false; }
+}
+function toggleVerificado(conta){
+  const key = verifKey(conta);
+  try{
+    if(localStorage.getItem(key) === '1') localStorage.removeItem(key);
+    else localStorage.setItem(key, '1');
+  }catch(e){ /* localStorage indisponível — verificação não será salva */ }
+}
+function contarVerificados(lista){
+  return lista.filter(r => isVerificado(r.conta)).length;
+}
+function atualizarProgresso(painel, lista){
+  const el = document.getElementById('progress-'+painel);
+  if(!el) return;
+  const total = lista.length;
+  const feitos = contarVerificados(lista);
+  const pct = total ? Math.round((feitos/total)*100) : 0;
+  el.innerHTML = `${feitos} de ${total} verificados <span class="bar"><span style="width:${pct}%"></span></span>`;
+}
+function checkboxHtml(conta){
+  const v = isVerificado(conta);
+  return `<label class="check-wrap"><input type="checkbox" data-verif="${conta}" ${v?'checked':''}><span>${v?'Verificado':'Marcar'}</span></label>`;
+}
+
+function renderizarResultado(dadosRazao, resultado, classif){
+  ULTIMO = { dadosRazao, resultado, classif };
+  const { fechadas, correto, atencao, saldo_anterior } = classif;
+
+  DATA = {
+    empresa: dadosRazao.empresa, cnpj: dadosRazao.cnpj, periodo: dadosRazao.periodo,
+    total_contas: resultado.resumo.length,
+    fecham: fechadas.map(slimResumo), correto: correto.map(slimResumo), atencao: atencao.map(slimResumo),
+    saldo_anterior, divergencias: resultado.divergencias,
+    tarifa: resultado.revisao.filter(r => r.tipo === 'tarifa' || r.tipo === 'revisar_ocorrencia_unica'),
+  };
+
+  document.getElementById('tituloEmpresa').textContent = DATA.empresa || 'Empresa';
+  document.getElementById('metaCnpj').textContent = DATA.cnpj || '—';
+  document.getElementById('metaPeriodo').textContent = DATA.periodo || '—';
+  document.getElementById('metaTotal').textContent = DATA.total_contas;
+  document.getElementById('stampNum').textContent = DATA.divergencias.length;
+
+  document.getElementById('kpiFecham').textContent = DATA.fecham.length;
+  document.getElementById('kpiCorreto').textContent = DATA.correto.length;
+  document.getElementById('kpiAtencao').textContent = DATA.atencao.length;
+  document.getElementById('kpiAnterior').textContent = DATA.saldo_anterior.length;
+  document.getElementById('kpiTarifa').textContent = DATA.tarifa.length;
+
+  let saldoTotalAberto = 0;
+  DATA.correto.forEach(r => saldoTotalAberto += Math.abs(r.saldo_final));
+  DATA.atencao.forEach(r => saldoTotalAberto += Math.abs(r.saldo_final));
+  document.getElementById('kpiSaldoTotal').textContent = fmtMoney(saldoTotalAberto);
+
+  const divContent = document.getElementById('divContent');
+  if(DATA.divergencias.length === 0){
+    divContent.innerHTML = `
+      <div class="stamp2"><span>NADA A<br>REPORTAR</span></div>
+      <p>Nenhuma divergência encontrada — todos os saldos recalculados por FIFO batem com o Saldo-Exercício reportado pelo Domínio, conta por conta.</p>`;
+  } else {
+    divContent.innerHTML = `
+      <div style="text-align:left;">
+        <table>
+          <thead><tr><th>Conta</th><th>Fornecedor</th><th class="num">Saldo Reportado</th><th class="num">Saldo Recalculado</th><th class="num">Diferença</th><th>Possível causa</th></tr></thead>
+          <tbody>${DATA.divergencias.map(d => `<tr>
+            <td class="conta">${d.conta}</td><td class="fornecedor">${d.fornecedor}</td>
+            <td class="num">${fmtMoney(d.saldo_final)}</td><td class="num">${fmtMoney(d.saldo_recalculado)}</td>
+            <td class="num">${fmtMoney(d.diferenca)}</td><td>${d.causa}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  renderFecham(); renderCorreto(); renderAtencao(); renderAnterior(); renderTarifa();
+}
+
+function slimResumo(r){
+  return { conta:r.conta, fornecedor:r.fornecedor, saldo_anterior:r.saldo_anterior, notas:r.total_notas,
+           baixas:r.total_baixas, saldo_final:r.saldo_final, qtde_abertas:r.qtde_abertas };
+}
+
+function renderFecham(){
+  const st = state.fecham;
+  let rows = DATA.fecham.filter(r => (r.fornecedor+r.conta).toLowerCase().includes(st.filter));
+  if(st.hideVerified) rows = rows.filter(r => !isVerificado(r.conta));
+  rows.sort((a,b)=> (a[st.sortKey] > b[st.sortKey] ? 1 : -1) * st.sortDir);
+  document.querySelector('#table-fecham tbody').innerHTML = rows.map(r => `
+    <tr class="${isVerificado(r.conta)?'row-verificado':''}"><td class="conta">${r.conta}</td><td class="fornecedor">${r.fornecedor}</td>
+      <td class="num">${fmtMoneySigned(r.saldo_anterior)}</td><td class="num">${fmtMoney(r.notas)}</td>
+      <td class="num">${fmtMoney(r.baixas)}</td><td class="num">${fmtMoney(r.saldo_final)}</td>
+      <td class="verif-cell">${checkboxHtml(r.conta)}</td></tr>`).join('');
+  document.getElementById('count-fecham').textContent = rows.length + ' de ' + DATA.fecham.length + ' fornecedores exibidos';
+  atualizarProgresso('fecham', DATA.fecham);
+}
+function renderCorreto(){
+  const st = state.correto;
+  let rows = DATA.correto.filter(r => (r.fornecedor+r.conta).toLowerCase().includes(st.filter));
+  if(st.hideVerified) rows = rows.filter(r => !isVerificado(r.conta));
+  rows.sort((a,b)=> (Math.abs(a[st.sortKey]) > Math.abs(b[st.sortKey]) ? 1 : -1) * st.sortDir);
+  document.querySelector('#table-correto tbody').innerHTML = rows.map(r => `
+    <tr class="${isVerificado(r.conta)?'row-verificado':''}"><td class="conta">${r.conta}</td><td class="fornecedor">${r.fornecedor}</td>
+      <td class="num">${fmtMoney(Math.abs(r.saldo_final))}</td><td class="num">${r.qtde_abertas}</td>
+      <td><span class="badge ok">CORRETO</span></td>
+      <td class="verif-cell">${checkboxHtml(r.conta)}</td></tr>`).join('');
+  document.getElementById('count-correto').textContent = rows.length + ' de ' + DATA.correto.length + ' fornecedores exibidos';
+  atualizarProgresso('correto', DATA.correto);
+}
+function renderAtencao(){
+  const st = state.atencao;
+  let rows = DATA.atencao.filter(r => (r.fornecedor+r.conta).toLowerCase().includes(st.filter));
+  if(st.hideVerified) rows = rows.filter(r => !isVerificado(r.conta));
+  rows.sort((a,b)=> (Math.abs(a[st.sortKey]) > Math.abs(b[st.sortKey]) ? 1 : -1) * st.sortDir);
+  document.querySelector('#table-atencao tbody').innerHTML = rows.map(r => `
+    <tr class="${isVerificado(r.conta)?'row-verificado':''}"><td class="conta">${r.conta}</td><td class="fornecedor">${r.fornecedor}</td>
+      <td class="num">${fmtMoney(Math.abs(r.saldo_final))}</td><td class="num">${r.qtde_abertas}</td>
+      <td><span class="badge attn">ATENÇÃO</span></td>
+      <td class="verif-cell">${checkboxHtml(r.conta)}</td></tr>`).join('');
+  document.getElementById('count-atencao').textContent = rows.length + ' de ' + DATA.atencao.length + ' fornecedores exibidos';
+  atualizarProgresso('atencao', DATA.atencao);
+}
+function renderAnterior(){
+  const st = state.anterior;
+  let rows = DATA.saldo_anterior.filter(r => (r.fornecedor+r.conta).toLowerCase().includes(st.filter));
+  if(st.hideVerified) rows = rows.filter(r => !isVerificado(r.conta));
+  rows.sort((a,b)=> (Math.abs(a[st.sortKey]) > Math.abs(b[st.sortKey]) ? 1 : -1) * st.sortDir);
+  document.querySelector('#table-anterior tbody').innerHTML = rows.map(r => `
+    <tr class="${isVerificado(r.conta)?'row-verificado':''}"><td class="conta">${r.conta}</td><td class="fornecedor">${r.fornecedor}</td>
+      <td class="num">${fmtMoney(r.valor_original)}</td><td class="num">${fmtMoney(r.valor_aberto)}</td>
+      <td class="num">${fmtMoney(Math.abs(r.saldo_final))}</td>
+      <td class="verif-cell">${checkboxHtml(r.conta)}</td></tr>`).join('');
+  document.getElementById('count-anterior').textContent = rows.length + ' de ' + DATA.saldo_anterior.length + ' fornecedores exibidos';
+  atualizarProgresso('anterior', DATA.saldo_anterior);
+}
+
+function renderTarifa(){
+  const st = state.tarifa;
+  let rows = DATA.tarifa.map(r => ({
+    ...r,
+    notas_str: r.notas_fechadas.map(n => n.nf).join(', ') || '—',
+    status_str: r.tipo === 'tarifa' ? 'Confirmada' : 'Ocorrência única',
+  }));
+  rows = rows.filter(r => (r.fornecedor+r.conta).toLowerCase().includes(st.filter));
+  rows.sort((a,b)=> {
+    const av = a[st.sortKey], bv = b[st.sortKey];
+    const cmp = (typeof av === 'number' && typeof bv === 'number') ? (av - bv) : String(av).localeCompare(String(bv));
+    return cmp * st.sortDir;
+  });
+  document.querySelector('#table-tarifa tbody').innerHTML = rows.map(r => `
+    <tr><td class="conta">${r.conta}</td><td class="fornecedor">${r.fornecedor}</td>
+      <td>${fmtData(r.data)}</td>
+      <td class="conta">${r.notas_str}</td>
+      <td class="num">${fmtMoney(r.valor_pago)}</td>
+      <td class="num">${fmtMoney(r.excesso)}</td>
+      <td><span class="badge ${r.tipo === 'tarifa' ? 'ok' : 'attn'}">${r.status_str}</span></td></tr>`).join('');
+  document.getElementById('count-tarifa').textContent = rows.length + ' de ' + DATA.tarifa.length + ' pagamentos exibidos';
+}
+
+const renderers = {fecham: renderFecham, correto: renderCorreto, atencao: renderAtencao, anterior: renderAnterior, tarifa: renderTarifa};
+
+document.querySelectorAll('input[data-search]').forEach(inp => {
+  inp.addEventListener('input', e => {
+    const key = e.target.getAttribute('data-search');
+    state[key].filter = e.target.value.toLowerCase();
+    renderers[key]();
+  });
+});
+document.querySelectorAll('table thead th[data-key]').forEach(th => {
+  th.addEventListener('click', () => {
+    const table = th.closest('table');
+    const id = table.id.replace('table-','');
+    const key = th.getAttribute('data-key');
+    const st = state[id];
+    if(st.sortKey === key){ st.sortDir *= -1; } else { st.sortKey = key; st.sortDir = 1; }
+    renderers[id]();
+  });
+});
+document.querySelectorAll('.btn-mini[data-hide-toggle]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-hide-toggle');
+    state[id].hideVerified = !state[id].hideVerified;
+    btn.classList.toggle('active', state[id].hideVerified);
+    btn.textContent = state[id].hideVerified ? 'Mostrar todos' : 'Ocultar verificados';
+    renderers[id]();
+  });
+});
+document.addEventListener('change', e => {
+  if(e.target.matches('input[data-verif]')){
+    const conta = e.target.getAttribute('data-verif');
+    toggleVerificado(conta);
+    const table = e.target.closest('table');
+    const id = table.id.replace('table-','');
+    renderers[id]();
+  }
+});
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel-body').forEach(p=>p.style.display='none');
+    tab.classList.add('active');
+    document.getElementById('panel-'+tab.getAttribute('data-tab')).style.display='block';
+  });
+});
+
+/* ============================================================================
+   RELATÓRIO COMPLETO EM EXCEL — estilizado (gerado no navegador via xlsx-js-style)
+   ============================================================================ */
+function fmtData(d){
+  if(!d) return '';
+  const dt = (d instanceof Date) ? d : new Date(d);
+  if(isNaN(dt)) return '';
+  return dt.toLocaleDateString('pt-BR');
+}
+
+/* ---- paleta e helpers de estilo (Camilo Contabilidade) ---- */
+const COR_REL = {
+  navy:'0C1A41', white:'FFFFFF', inkSoft:'5B5442', ink:'221D14', rule:'C9BFA0',
+  ok:'2F6F4E', okBg:'E1EEE5', attn:'9C3B26', attnBg:'F4E1DA', atencaoBg:'FFF3CD',
+};
+const BORDA_FINA_REL = { style:'thin', color:{rgb:COR_REL.rule} };
+const BORDA_TUDO_REL = { top:BORDA_FINA_REL, bottom:BORDA_FINA_REL, left:BORDA_FINA_REL, right:BORDA_FINA_REL };
+
+function relCab(){
+  return { font:{bold:true, sz:10, color:{rgb:COR_REL.white}, name:'Calibri'},
+           fill:{fgColor:{rgb:COR_REL.navy}},
+           alignment:{horizontal:'center', vertical:'center', wrapText:true},
+           border: BORDA_TUDO_REL };
+}
+function relCorpo(fundo, alinhamento){
+  const s = { font:{sz:10, name:'Calibri'}, border: BORDA_TUDO_REL };
+  if(fundo) s.fill = {fgColor:{rgb:fundo}};
+  if(alinhamento) s.alignment = {horizontal:alinhamento};
+  return s;
+}
+function relSetCell(ws, r, c, style){
+  const ref = XLSX.utils.encode_cell({r, c});
+  if(!ws[ref]) ws[ref] = {t:'s', v:''};
+  ws[ref].s = style;
+}
+function relSetFormato(ws, r, c, formato){
+  const ref = XLSX.utils.encode_cell({r, c});
+  if(ws[ref]) ws[ref].z = formato;
+}
+function relEstilizarCabecalho(ws, linha, ncols){
+  for(let c=0;c<ncols;c++) relSetCell(ws, linha, c, relCab());
+}
+function relEstilizarLinha(ws, linha, ncols, fundo, colsNumericas){
+  for(let c=0;c<ncols;c++){
+    const alinhamento = (colsNumericas && colsNumericas.includes(c)) ? 'right' : undefined;
+    relSetCell(ws, linha, c, relCorpo(fundo, alinhamento));
+    if(colsNumericas && colsNumericas.includes(c)) relSetFormato(ws, linha, c, '#,##0.00');
+  }
+}
+
+document.getElementById('btnRelatorio').addEventListener('click', gerarRelatorioCompleto);
+
+function gerarRelatorioCompleto(){
+  if(!ULTIMO){ return; }
+  const { dadosRazao, resultado, classif } = ULTIMO;
+  const contasSaldoAnteriorSet = classif.contas_com_saldo_anterior || new Set();
+  const contasFechadasSet = new Set(classif.fechadas.map(r => r.conta));
+  const contasCorretoSet = new Set(classif.correto.map(r => r.conta));
+
+  function composicaoDe(conta){
+    if(contasFechadasSet.has(conta)) return 'Fechada';
+    if(contasCorretoSet.has(conta)) return 'Em aberto - so mes mais recente (correto)';
+    if(contasSaldoAnteriorSet.has(conta)) return 'Em aberto - inclui saldo de periodo anterior (atencao)';
+    return 'Em aberto - inclui mes(es) anterior(es) do periodo (atencao)';
+  }
+  function fundoDaLinha(status, conta){
+    if(status === 'DIVERGENTE') return COR_REL.attnBg;
+    if(contasFechadasSet.has(conta) || contasCorretoSet.has(conta)) return COR_REL.okBg;
+    return COR_REL.atencaoBg;
+  }
+
+  const resumoOrdenado = [...resultado.resumo].sort((a,b)=> a.saldo_final - b.saldo_final);
+  const abertosOrdenado = [...resultado.abertos].sort((a,b)=> a.fornecedor.localeCompare(b.fornecedor));
+
+  const totalContas = resultado.resumo.length;
+  const totalVerificados = resultado.resumo.filter(r => isVerificado(r.conta)).length;
+  const saldoTotalEmAberto = classif.correto.concat(classif.atencao).reduce((s,r)=> s + Math.abs(r.saldo_final), 0);
+
+  const wb = XLSX.utils.book_new();
+
+  /* ================= ABA RESUMO ================= */
+  const linhasResumo = [
+    ['CONCILIAÇÃO DE FORNECEDORES', ''],
+    [dadosRazao.empresa || '', ''],
+    ['CNPJ', dadosRazao.cnpj || ''],
+    ['Período analisado', dadosRazao.periodo || ''],
+    ['Relatório gerado em', new Date().toLocaleString('pt-BR')],
+    ['', ''],
+    ['INDICADOR', 'VALOR'],
+    ['Total de fornecedores (contas) analisados', totalContas],
+    ['Contas fechadas (saldo final = R$ 0,00)', classif.fechadas.length],
+    ['Em aberto — correto (só mês mais recente do período)', classif.correto.length],
+    ['Em aberto — atenção (mês(es) anterior(es) do período)', classif.atencao.length],
+    ['Com saldo de período(s) anterior(es) pendente', classif.saldo_anterior.length],
+    ['Saldo total em aberto ao final do período', saldoTotalEmAberto],
+    ['Divergências (saldo recalculado ≠ Saldo-Exercício)', resultado.divergencias.length],
+    ['Fornecedores já verificados manualmente', totalVerificados + ' de ' + totalContas],
+    ['', ''],
+    ['METODOLOGIA', ''],
+    ['Conciliação por casamento FIFO: cada nota (crédito) é compensada pelos pagamentos (débitos) na ordem cronológica em que ocorreram.', ''],
+    ['O saldo recalculado de cada fornecedor é comparado ao Saldo-Exercício reportado pelo Domínio.', ''],
+    ['Contas em aberto são classificadas como correto quando o saldo pendente é só do mês mais recente do período,', ''],
+    ['e como atenção quando inclui mês(es) anterior(es) do próprio período e/ou saldo de período(s) anteriores.', ''],
+  ];
+  const wsResumo = XLSX.utils.aoa_to_sheet(linhasResumo);
+  wsResumo['!cols'] = [{wch:62},{wch:22}];
+  wsResumo['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:1}}, {s:{r:1,c:0}, e:{r:1,c:1}}, {s:{r:16,c:0}, e:{r:16,c:1}}];
+  relSetCell(wsResumo, 0, 0, { font:{bold:true, sz:16, color:{rgb:COR_REL.navy}, name:'Calibri'} });
+  relSetCell(wsResumo, 1, 0, { font:{bold:true, sz:12, name:'Calibri'} });
+  relSetCell(wsResumo, 2, 0, { font:{sz:10, color:{rgb:COR_REL.inkSoft}, name:'Calibri'} });
+  relSetCell(wsResumo, 2, 1, { font:{bold:true, sz:10, name:'Calibri'} });
+  relSetCell(wsResumo, 3, 0, { font:{sz:10, color:{rgb:COR_REL.inkSoft}, name:'Calibri'} });
+  relSetCell(wsResumo, 3, 1, { font:{bold:true, sz:10, name:'Calibri'} });
+  relSetCell(wsResumo, 4, 0, { font:{sz:9, italic:true, color:{rgb:'666666'}, name:'Calibri'} });
+  relSetCell(wsResumo, 4, 1, { font:{sz:9, italic:true, color:{rgb:'666666'}, name:'Calibri'} });
+  relEstilizarCabecalho(wsResumo, 6, 2);
+  for(let r=7; r<=14; r++){
+    relSetCell(wsResumo, r, 0, { font:{sz:10, color:{rgb:COR_REL.inkSoft}, name:'Calibri'} });
+    const corValor = (r===13 && resultado.divergencias.length>0) ? COR_REL.attn : COR_REL.navy;
+    relSetCell(wsResumo, r, 1, { font:{bold:true, sz:10, color:{rgb:corValor}, name:'Calibri'}, alignment:{horizontal:'right'} });
+  }
+  relSetFormato(wsResumo, 12, 1, '"R$" #,##0.00');
+  relSetCell(wsResumo, 16, 0, { font:{bold:true, sz:12, color:{rgb:COR_REL.navy}, name:'Calibri'} });
+  for(let r=17; r<=20; r++){
+    relSetCell(wsResumo, r, 0, { font:{sz:9, italic:true, color:{rgb:COR_REL.inkSoft}, name:'Calibri'} });
+  }
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+
+  /* ================= ABA POR FORNECEDOR ================= */
+  const cabecalhoFornecedor = ['Conta','Fornecedor','Saldo Anterior','Notas (Créditos)','Baixas (Débitos)',
+    'Saldo Final','Saldo Recalculado','Diferença','Status','Composição','Verificado'];
+  const linhasFornecedor = resumoOrdenado.map(r => [
+    r.conta, r.fornecedor, r.saldo_anterior, r.total_notas, r.total_baixas,
+    r.saldo_final, r.saldo_recalculado, r.diferenca, r.status, composicaoDe(r.conta),
+    isVerificado(r.conta) ? 'Sim' : 'Não',
+  ]);
+  const wsFornecedor = XLSX.utils.aoa_to_sheet([cabecalhoFornecedor, ...linhasFornecedor]);
+  wsFornecedor['!cols'] = [{wch:16},{wch:38},{wch:15},{wch:16},{wch:16},{wch:14},{wch:16},{wch:12},{wch:12},{wch:44},{wch:12}];
+  wsFornecedor['!autofilter'] = { ref: 'A1:K' + (linhasFornecedor.length+1) };
+  wsFornecedor['!freeze'] = { xSplit:0, ySplit:1 };
+  relEstilizarCabecalho(wsFornecedor, 0, 11);
+  linhasFornecedor.forEach((row, i) => {
+    const fundo = fundoDaLinha(row[8], row[0]);
+    relEstilizarLinha(wsFornecedor, i+1, 11, fundo, [2,3,4,5,6,7]);
+    relSetCell(wsFornecedor, i+1, 8, relCorpo(fundo, 'center'));
+    relSetCell(wsFornecedor, i+1, 10, relCorpo(fundo, 'center'));
+  });
+  XLSX.utils.book_append_sheet(wb, wsFornecedor, 'Por Fornecedor');
+
+  /* ================= ABA NOTAS EM ABERTO ================= */
+  const cabecalhoAbertos = ['Conta','Fornecedor','NF','Data','Histórico','Valor Original','Valor em Aberto'];
+  const linhasAbertos = abertosOrdenado.map(a => [
+    a.conta, a.fornecedor, a.nf || '', fmtData(a.data), a.historico, a.valor_original, a.valor_aberto,
+  ]);
+  const wsAbertos = XLSX.utils.aoa_to_sheet([cabecalhoAbertos, ...linhasAbertos]);
+  wsAbertos['!cols'] = [{wch:16},{wch:38},{wch:12},{wch:12},{wch:62},{wch:15},{wch:15}];
+  wsAbertos['!autofilter'] = { ref: 'A1:G' + (linhasAbertos.length+1) };
+  wsAbertos['!freeze'] = { xSplit:0, ySplit:1 };
+  relEstilizarCabecalho(wsAbertos, 0, 7);
+  linhasAbertos.forEach((row, i) => {
+    const zebra = (i % 2 === 0) ? 'F7F4EC' : undefined;
+    relEstilizarLinha(wsAbertos, i+1, 7, zebra, [5,6]);
+    relSetCell(wsAbertos, i+1, 3, relCorpo(zebra, 'center'));
+  });
+  const totalAbertoRow = linhasAbertos.length + 1;
+  XLSX.utils.sheet_add_aoa(wsAbertos, [['', '', '', '', 'TOTAL EM ABERTO:', '', resultado.abertos.reduce((s,a)=>s+a.valor_aberto,0)]], {origin: totalAbertoRow});
+  relSetCell(wsAbertos, totalAbertoRow, 4, { font:{bold:true, sz:10, name:'Calibri'}, alignment:{horizontal:'right'} });
+  relSetCell(wsAbertos, totalAbertoRow, 6, { font:{bold:true, sz:10, color:{rgb:COR_REL.navy}, name:'Calibri'}, alignment:{horizontal:'right'} });
+  relSetFormato(wsAbertos, totalAbertoRow, 6, '"R$" #,##0.00');
+  XLSX.utils.book_append_sheet(wb, wsAbertos, 'Notas em Aberto');
+
+  /* ================= ABA DIVERGÊNCIAS ================= */
+  const cabecalhoDiv = ['Conta','Fornecedor','Saldo Reportado','Saldo Recalculado','Diferença','Possível Causa'];
+  const wsDiv = resultado.divergencias.length
+    ? XLSX.utils.aoa_to_sheet([cabecalhoDiv, ...resultado.divergencias.map(d => [
+        d.conta, d.fornecedor, d.saldo_final, d.saldo_recalculado, d.diferenca, d.causa,
+      ])])
+    : XLSX.utils.aoa_to_sheet([['Nenhuma divergência encontrada — todos os saldos recalculados por FIFO batem com o Saldo-Exercício.']]);
+  wsDiv['!cols'] = [{wch:16},{wch:38},{wch:18},{wch:18},{wch:14},{wch:48}];
+  if(resultado.divergencias.length){
+    relEstilizarCabecalho(wsDiv, 0, 6);
+    resultado.divergencias.forEach((d,i) => relEstilizarLinha(wsDiv, i+1, 6, COR_REL.attnBg, [2,3,4]));
+  } else {
+    wsDiv['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:5}}];
+    relSetCell(wsDiv, 0, 0, { font:{bold:true, sz:11, color:{rgb:COR_REL.ok}, name:'Calibri'}, fill:{fgColor:{rgb:COR_REL.okBg}}, alignment:{vertical:'center', wrapText:true} });
+    wsDiv['!rows'] = [{hpt:26}];
+  }
+  XLSX.utils.book_append_sheet(wb, wsDiv, 'Divergências');
+
+  /* ================= ABA TARIFAS IDENTIFICADAS ================= */
+  const tarifasOrdenado = resultado.revisao.filter(r => r.tipo === 'tarifa' || r.tipo === 'revisar_ocorrencia_unica')
+    .sort((a,b)=> a.fornecedor.localeCompare(b.fornecedor));
+  const cabecalhoTarifa = ['Conta','Fornecedor','Data do Pagamento','Nota(s) Fechada(s)','Valor Pago','Excesso (Tarifa)','Status'];
+  const wsTarifa = tarifasOrdenado.length
+    ? XLSX.utils.aoa_to_sheet([cabecalhoTarifa, ...tarifasOrdenado.map(r => [
+        r.conta, r.fornecedor, fmtData(r.data), r.notas_fechadas.map(n=>n.nf).join(', ') || '—', r.valor_pago, r.excesso,
+        r.tipo === 'tarifa' ? 'Confirmada (padrão repetido)' : 'Ocorrência única - confirmar',
+      ])])
+    : XLSX.utils.aoa_to_sheet([[`Nenhum pagamento com provável tarifa embutida encontrado (faixa: R$ ${LIMITE_ARREDONDAMENTO.toFixed(2)} a R$ ${LIMITE_TARIFA_BANCARIA.toFixed(2)}).`]]);
+  wsTarifa['!cols'] = [{wch:16},{wch:38},{wch:16},{wch:24},{wch:14},{wch:16},{wch:26}];
+  if(tarifasOrdenado.length){
+    relEstilizarCabecalho(wsTarifa, 0, 7);
+    tarifasOrdenado.forEach((r,i) => relEstilizarLinha(wsTarifa, i+1, 7, r.tipo === 'tarifa' ? COR_REL.okBg : COR_REL.atencaoBg, [4,5]));
+  } else {
+    wsTarifa['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:6}}];
+    relSetCell(wsTarifa, 0, 0, { font:{bold:true, sz:11, color:{rgb:COR_REL.ok}, name:'Calibri'}, fill:{fgColor:{rgb:COR_REL.okBg}}, alignment:{vertical:'center', wrapText:true} });
+    wsTarifa['!rows'] = [{hpt:26}];
+  }
+  XLSX.utils.book_append_sheet(wb, wsTarifa, 'Tarifas Identificadas');
+
+  const nomeArquivo = 'Relatorio_Completo_' + (dadosRazao.empresa || 'Conciliacao').replace(/[^A-Za-z0-9]+/g,'_').slice(0,40) + '.xlsx';
+  XLSX.writeFile(wb, nomeArquivo);
+}
+</script>
+
+
+</body>
+</html>

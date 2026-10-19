@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extrator Invest Fácil — Camilo Contabilidade</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy: #10233f;
+    --navy-2: #16305a;
+    --gold: #c9a227;
+    --gold-2: #e4c765;
+    --bg: #f4f6f9;
+    --paper: #ffffff;
+    --line: #dde3ec;
+    --text: #1c2733;
+    --muted: #6b7789;
+    --pag: #b23b3b;
+    --rec: #1f7a4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff;
+    padding:22px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    border-bottom:4px solid var(--gold);
+  }
+  header .brand{display:flex; flex-direction:column;}
+  header .brand small{color:var(--gold-2); letter-spacing:.03em; font-size:12px;}
+  header h1{margin:2px 0 0; font-size:20px; font-weight:700;}
+
+  main{max-width:1100px; margin:0 auto; padding:24px 20px 60px;}
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px 22px;
+    margin-bottom:20px;
+    box-shadow:0 1px 3px rgba(16,35,63,.06);
+  }
+
+  .card h2{
+    margin:0 0 14px;
+    font-size:15px;
+    color:var(--navy);
+    border-left:4px solid var(--gold);
+    padding-left:10px;
+  }
+
+  .controls{display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;}
+  .field{display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--muted);}
+  .field input[type=text]{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:14px;
+    width:120px;
+    color:var(--text);
+  }
+
+  .dropzone{
+    flex:1;
+    min-width:260px;
+    border:2px dashed var(--line);
+    border-radius:8px;
+    padding:22px;
+    text-align:center;
+    color:var(--muted);
+    cursor:pointer;
+    transition:.15s border-color, .15s background;
+  }
+  .dropzone.drag{border-color:var(--gold); background:#fff9ea;}
+  .dropzone strong{color:var(--navy);}
+  .dropzone input{display:none;}
+
+  .buttons{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  button{
+    border:none;
+    border-radius:6px;
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.15s filter;
+  }
+  button:hover{filter:brightness(1.08);}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+  .btn-primary{background:var(--navy); color:#fff;}
+  .btn-gold{background:var(--gold); color:#2a2205;}
+  .btn-ghost{background:#eef1f6; color:var(--navy);}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  thead th{
+    background:var(--navy);
+    color:#fff;
+    text-align:center;
+    padding:10px 8px;
+    position:sticky; top:0;
+  }
+  tbody td{
+    padding:8px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+  }
+  tbody tr:nth-child(even){background:#fafbfd;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  td.pag{color:var(--pag); font-weight:600;}
+  td.rec{color:var(--rec); font-weight:600;}
+  tfoot td{
+    font-weight:700;
+    border-top:2px solid var(--navy);
+    background:#eef1f6;
+  }
+
+  .empty{color:var(--muted); font-size:13.5px; text-align:center; padding:30px 0;}
+  .status{font-size:12.5px; color:var(--muted); margin-top:8px;}
+  .table-wrap{max-height:520px; overflow:auto; border:1px solid var(--line); border-radius:8px;}
+  .badge{
+    display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px;
+    background:#eef1f6; color:var(--navy); margin-left:8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <small>CAMILO CONTABILIDADE</small>
+    <h1>Extrator Resgate / Aplic. Invest Fácil</h1>
+  </div>
+  <div class="status" id="pageStatus" style="color:#dce3ef;"></div>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>1. Envie o(s) extrato(s) em PDF</h2>
+    <div class="controls">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="application/pdf" multiple>
+        <div><strong>Clique para escolher</strong> ou arraste um ou mais PDFs do Bradesco aqui</div>
+      </label>
+      <div class="field">
+        <label for="bancoInput">Código do banco</label>
+        <input type="text" id="bancoInput" value="4780">
+      </div>
+    </div>
+    <div class="status" id="fileStatus">Nenhum arquivo processado ainda.</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Lançamentos encontrados <span class="badge" id="countBadge">0</span></h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:110px;">Data</th>
+            <th>Fornecedor</th>
+            <th style="width:90px;">Banco</th>
+            <th style="width:130px;">Pagamento</th>
+            <th style="width:130px;">Recebimento</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="5" class="empty">Envie um extrato para ver os lançamentos aqui.</td></tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td class="num" id="totalPag">0,00</td>
+            <td class="num" id="totalRec">0,00</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="buttons">
+      <button class="btn-gold" id="btnExport" disabled>Exportar Excel</button>
+      <button class="btn-ghost" id="btnClear" disabled>Limpar tudo</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let registros = []; // {data, fornecedor, banco, pagamento, recebimento, sortKey}
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const fileStatus = document.getElementById('fileStatus');
+const pageStatus = document.getElementById('pageStatus');
+const tbody = document.getElementById('tbody');
+const countBadge = document.getElementById('countBadge');
+const totalPagEl = document.getElementById('totalPag');
+const totalRecEl = document.getElementById('totalRec');
+const btnExport = document.getElementById('btnExport');
+const btnClear = document.getElementById('btnClear');
+const bancoInput = document.getElementById('bancoInput');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) processFiles(e.target.files);
+  fileInput.value = '';
+});
+
+function brNumberToFloat(s){
+  return parseFloat(s.replace(/\./g,'').replace(',', '.'));
+}
+
+function floatToBr(n){
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function parseDateKey(dd, mm, yyyy){
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+async function extractTextFromPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  let fullText = '';
+  for (let p = 1; p <= pdf.numPages; p++){
+    pageStatus.textContent = `Lendo ${file.name} — página ${p}/${pdf.numPages}`;
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const line = content.items.map(it => it.str).join(' ');
+    fullText += line + '\n';
+  }
+  return fullText;
+}
+
+function inferYear(text, mm){
+  // procura período tipo 01/08/2026 a 31/08/2026 (ou variações de espaçamento)
+  const m = text.match(/(\d{2})\/(\d{2})\/(\d{4})\s*a\s*(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return new Date().getFullYear();
+  const [, , startMM, startYYYY, , endMM, endYYYY] = m;
+  if (mm === startMM) return startYYYY;
+  if (mm === endMM) return endYYYY;
+  return endYYYY;
+}
+
+function parseStatement(text){
+  const found = [];
+
+  // todas as ocorrências de datas curtas dd/mm (não seguidas de /aaaa, pra não pegar período)
+  const dateRegex = /\b(\d{2})\/(\d{2})\b(?!\/\d{4})/g;
+  const dates = [];
+  let dm;
+  while ((dm = dateRegex.exec(text)) !== null){
+    dates.push({index: dm.index, dd: dm[1], mm: dm[2]});
+  }
+
+  function nearestDateBefore(idx){
+    let best = null;
+    for (const d of dates){
+      if (d.index <= idx) best = d;
+      else break;
+    }
+    return best;
+  }
+
+  const patterns = [
+    {re: /Resgate\s+Invest\s+Facil\s+(\d{5,9})\s+([\d.,]+)/gi, tipo: 'recebimento', label: 'Resgate Invest Facil'},
+    {re: /Aplic\.?\s*invest\s+Facil\s+(\d{5,9})\s+([\d.,]+)/gi, tipo: 'pagamento', label: 'Aplic.invest Facil'}
+  ];
+
+  for (const p of patterns){
+    let m;
+    p.re.lastIndex = 0;
+    while ((m = p.re.exec(text)) !== null){
+      const docto = m[1];
+      const valorStr = m[2];
+      const valor = brNumberToFloat(valorStr);
+      if (isNaN(valor)) continue;
+      const d = nearestDateBefore(m.index);
+      if (!d) continue;
+      const yyyy = inferYear(text, d.mm);
+      found.push({
+        data: `${d.dd}/${d.mm}/${yyyy}`,
+        sortKey: parseDateKey(d.dd, d.mm, yyyy),
+        fornecedor: p.label,
+        docto,
+        valor,
+        tipo: p.tipo
+      });
+    }
+  }
+
+  return found;
+}
+
+async function processFiles(fileList){
+  const banco = bancoInput.value.trim() || '4780';
+  for (const file of fileList){
+    fileStatus.textContent = `Processando ${file.name}...`;
+    try{
+      const text = await extractTextFromPdf(file);
+      const encontrados = parseStatement(text);
+      encontrados.forEach(e => {
+        registros.push({
+          data: e.data,
+          sortKey: e.sortKey,
+          fornecedor: e.fornecedor,
+          banco,
+          pagamento: e.tipo === 'pagamento' ? e.valor : null,
+          recebimento: e.tipo === 'recebimento' ? e.valor : null
+        });
+      });
+      fileStatus.textContent = `${file.name}: ${encontrados.length} lançamento(s) encontrado(s).`;
+    }catch(err){
+      console.error(err);
+      fileStatus.textContent = `Erro ao ler ${file.name}: ${err.message}`;
+    }
+  }
+  pageStatus.textContent = '';
+  render();
+}
+
+function render(){
+  registros.sort((a,b) => a.sortKey.localeCompare(b.sortKey));
+
+  if (registros.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Envie um extrato para ver os lançamentos aqui.</td></tr>';
+    totalPagEl.textContent = '0,00';
+    totalRecEl.textContent = '0,00';
+    countBadge.textContent = '0';
+    btnExport.disabled = true;
+    btnClear.disabled = true;
+    return;
+  }
+
+  let totalPag = 0, totalRec = 0;
+  tbody.innerHTML = registros.map(r => {
+    totalPag += r.pagamento || 0;
+    totalRec += r.recebimento || 0;
+    return `<tr>
+      <td>${r.data}</td>
+      <td style="text-align:left;">${r.fornecedor}</td>
+      <td>${r.banco}</td>
+      <td class="num pag">${r.pagamento !== null ? floatToBr(r.pagamento) : ''}</td>
+      <td class="num rec">${r.recebimento !== null ? floatToBr(r.recebimento) : ''}</td>
+    </tr>`;
+  }).join('');
+
+  totalPagEl.textContent = floatToBr(totalPag);
+  totalRecEl.textContent = floatToBr(totalRec);
+  countBadge.textContent = registros.length;
+  btnExport.disabled = false;
+  btnClear.disabled = false;
+}
+
+btnClear.addEventListener('click', () => {
+  registros = [];
+  fileStatus.textContent = 'Nenhum arquivo processado ainda.';
+  render();
+});
+
+btnExport.addEventListener('click', () => {
+  const header = ['Data do Pagamento', 'Fornecedor', 'Banco', 'Pagamento', 'Recebimento'];
+  const rows = registros.map(r => [
+    r.data,
+    r.fornecedor,
+    r.banco,
+    r.pagamento !== null ? r.pagamento : '',
+    r.recebimento !== null ? r.recebimento : ''
+  ]);
+
+  let totalPag = 0, totalRec = 0;
+  registros.forEach(r => { totalPag += r.pagamento || 0; totalRec += r.recebimento || 0; });
+  rows.push(['', 'Total', '', totalPag, totalRec]);
+
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  ws['!cols'] = [{wch:16},{wch:22},{wch:10},{wch:14},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Importacao');
+  const hoje = new Date();
+  const nomeArq = `Importacao_InvestFacil_${hoje.toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, nomeArq);
+});
+</script>
+
+</body>
+</html>

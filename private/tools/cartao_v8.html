@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lançador de Fatura de Cartão — Camilo Contabilidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#132242;
+    --navy-deep:#0c1830;
+    --gold:#c6a15b;
+    --gold-soft:#e7d3a3;
+    --paper:#f6f4ee;
+    --paper-2:#efece2;
+    --ink:#1b2130;
+    --ink-soft:#5b6373;
+    --line:#dcd6c6;
+    --green:#3f7d5c;
+    --red:#a3432f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14px;
+    line-height:1.5;
+  }
+  header{
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    padding:22px 28px 18px;
+    border-bottom:3px solid var(--gold);
+  }
+  header h1{
+    margin:0;
+    color:#fff;
+    font-family:'Lora', serif;
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  header p{
+    margin:4px 0 0;
+    color:var(--gold-soft);
+    font-size:12.5px;
+  }
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:30px 24px 60px;
+  }
+  h2{
+    font-family:'Lora', serif;
+    font-size:19px;
+    margin:0 0 4px;
+    color:var(--navy);
+  }
+  .sub{
+    color:var(--ink-soft);
+    font-size:13px;
+    margin:0 0 20px;
+  }
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:22px 24px;
+    margin-bottom:18px;
+  }
+  .step-num{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:22px;height:22px;
+    border-radius:50%;
+    background:var(--navy);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    margin-right:8px;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  input[type=text], input[type=file]{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    background:#fdfcf9;
+    color:var(--ink);
+  }
+  textarea{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; width:100%; min-height:200px; padding:10px; border:1px solid var(--line); border-radius:3px; background:#fdfcf9; }
+  .row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .row > div{ flex:1; min-width:150px; }
+  button.gold{
+    background:var(--gold);
+    color:var(--navy-deep);
+    border:none;
+    padding:10px 20px;
+    border-radius:3px;
+    font-size:13.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  button.gold:hover{ background:#b48f49; }
+  button.gold:disabled{ background:#e2d5b8; color:#9c9280; cursor:not-allowed; }
+  button.ghost{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:8px 14px;
+    border-radius:3px;
+    cursor:pointer;
+    font-size:12.5px;
+  }
+  button.ghost:hover{ border-color:var(--navy); color:var(--navy); }
+  table{ width:100%; border-collapse:collapse; font-size:12.8px; }
+  th{
+    text-align:left;
+    padding:8px 10px;
+    background:var(--paper-2);
+    border-bottom:1px solid var(--line);
+    font-weight:600;
+    color:var(--ink-soft);
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+  }
+  td{ padding:7px 10px; border-bottom:1px solid #eee; vertical-align:middle; }
+  td.num, th.num{ text-align:right; font-family:'IBM Plex Mono', monospace; }
+  tr.estorno td{ background:#fbf1ee; }
+  .badge{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge.compra{ background:#e6efe9; color:var(--green); }
+  .badge.estorno{ background:#f6e6e1; color:var(--red); }
+  .badge.banco{ background:var(--paper-2); color:var(--navy); margin-left:8px; }
+  .totals{
+    display:flex; gap:22px; margin-top:14px; padding-top:14px;
+    border-top:1px solid var(--line); font-family:'IBM Plex Mono', monospace; font-size:13px;
+  }
+  .totals b{ color:var(--navy); }
+  .status{ font-size:12.5px; margin-top:10px; }
+  .status.ok{ color:var(--green); }
+  .status.err{ color:var(--red); }
+  .status.hint{ color:var(--ink-soft); }
+  .footer-note{ font-size:11.5px; color:var(--ink-soft); margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lançador de Fatura de Cartão</h1>
+  <p>Camilo Contabilidade · reconhece faturas de Luiz Cesar Frison Veronesi (C6 Business e Cartões Caixa), Veronesi & Filhos (Bradesco), Simont Montagem (Itaú Empresas) e D.C. Turismo (Cartões a Receber) → Domínio (Leiaute 3.1)</p>
+  <p style="color:#e8c88a; font-size:11px; margin-top:6px;">Versão 2026-09-04-v8 — se essa data/versão não bater com a que você acabou de baixar, você está usando um arquivo antigo.</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2><span class="step-num">1</span>Enviar fatura</h2>
+    <p class="sub">Envie o(s) PDF(s) da fatura (sem senha) — pode selecionar mais de um arquivo de uma vez. O sistema identifica sozinho o cliente e o banco (C6 e Caixa para Luiz Cesar; Itaú Empresas para Simont) e classifica automaticamente. No Luiz Cesar: crédito sempre no Cartão (9978), débito na Zap Gráfica (787) quando reconhecer, ou no Caixa (5) quando não identificar fornecedor ou for parcelamento de ano anterior — na fatura Caixa, só entram Compras e Compras Parceladas. Na Simont: cada cartão (por final) vira um débito na sua própria conta de despesa, crédito único por fatura na 9978, histórico 450.</p>
+    <input type="file" id="faturaFile" accept="application/pdf,.xlsx,.xls" multiple>
+    <div class="status" id="faturaStatus"></div>
+    <button class="ghost" id="btnLimparTudo" style="margin-top:12px;">Limpar tudo (trocar de cliente/banco)</button>
+  </div>
+
+  <div class="card" id="resumoCard" style="display:none;">
+    <h2 style="font-size:16px;">Resumo <span class="badge banco" id="bancoDetectado"></span></h2>
+    <div class="totals" style="margin-top:0;padding-top:0;border-top:none;">
+      <div>Lançamentos: <b id="resLancamentos">0</b></div>
+      <div>Compras: <b id="totCompras">R$ 0,00</b></div>
+      <div>Estornos: <b id="totEstornos">R$ 0,00</b></div>
+      <div>Líquido lançado: <b id="totLiquido">R$ 0,00</b></div>
+    </div>
+    <div class="status" id="conferenciaStatus" style="margin-top:10px;"></div>
+    <button class="ghost" id="btnVerDetalhes" style="margin-top:12px;">Ver detalhes dos lançamentos</button>
+    <div id="detalhesWrap" style="display:none; margin-top:14px;">
+      <table>
+        <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Débito</th><th>Crédito</th><th>Histórico</th><th class="num">Valor</th></tr></thead>
+        <tbody id="txTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">2</span>Gerar arquivo</h2>
+    <p class="sub">Gera o <code>lanctos.txt</code> no Leiaute 3.1 do Domínio, pronto pra importar.</p>
+    <div class="row">
+      <div><label>Data do lançamento</label><input type="text" id="genData" placeholder="dd/mm/aaaa"></div>
+      <div><label>Código Matriz/Filial</label><input type="text" id="genFilial" value="213"></div>
+    </div>
+    <button class="gold" id="btnGerar">Gerar e baixar lanctos.txt</button>
+    <div class="status" id="genStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px;">Pré-visualização</h2>
+    <textarea id="genPreview" readonly></textarea>
+    <p class="footer-note">Formato por linha: Data;Conta Débito;Conta Crédito;Valor;Cód. Histórico;Complemento (vazio);Inicia Lote;Filial;CC Débito;CC Crédito</p>
+  </div>
+
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const MESES = {jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+
+// Configurações por cliente
+const CONFIG_LUIZ = {
+  cliente: 'LUIZ',
+  contaCartao: '9978',
+  contaCaixa: '5',
+  histCaixa: '250',
+  histFornecedor: '446',
+  filialPadrao: '213',
+  mapeamentos: [
+    {padrao: 'GRAFICA*PAGAMENTO', contaFornecedor: '787'}
+  ]
+};
+
+const CONFIG_SIMONT = {
+  cliente: 'SIMONT',
+  contaCartao: '9978',
+  historico: '450',
+  filialPadrao: '19',
+  contasPorCartaoFinal: {
+    '0852': '21578',
+    '4362': '21579',
+    '2397': '21580',
+    '7449': '21581',
+    '6318': '21617',
+    '2019': '21631',
+    '8884': '21632',
+    '3098': '21642'
+  }
+};
+
+const CONFIG_DCTURISMO = {
+  cliente: 'DCTURISMO',
+  contaTransitoria: '3062',
+  histEmitidos: '739',
+  histBaixados: '738',
+  histEstornoDebito: '291',
+  histEstornoCredito: '290',
+  filialPadrao: '20',
+  contasPorBandeira: {
+    'PIX': '16729',
+    'AMEX': '16726',
+    'VISA_CREDITO': '16722',
+    'VISA_DEBITO': '16723',
+    'MASTER_CREDITO': '16724',
+    'MASTER_DEBITO': '16725',
+    'ELO_CREDITO': '16727',
+    'ELO_DEBITO': '16728'
+  }
+};
+
+const CONFIG_VERONESIFILHOS = {
+  cliente: 'VERONESIFILHOS',
+  contaCartao: '9978',
+  contaCaixa: '5',
+  histCaixa: '250',
+  histFornecedor: '446',
+  filialPadrao: '78',
+  mapeamentos: [
+    {padrao: 'GRAFICA', contaFornecedor: '1098'}
+  ]
+};
+
+let transacoes = [];
+let totalFaturaLida = null;
+let bancoAtual = '';
+let activeConfig = null;
+
+function txFingerprint(tx){
+  return [tx.origData || tx.data, tx.descricao, tx.valor.toFixed(2)].join('|');
+}
+
+function adicionarTransacoesSemDuplicar(novasTxs){
+  const existentes = new Set(transacoes.map(txFingerprint));
+  let adicionadas = 0, duplicadas = 0;
+  novasTxs.forEach(tx=>{
+    const fp = txFingerprint(tx);
+    if(existentes.has(fp)){
+      duplicadas++;
+    } else {
+      existentes.add(fp);
+      transacoes.push(tx);
+      adicionadas++;
+    }
+  });
+  return {adicionadas, duplicadas};
+}
+
+function fmtBRL(v){
+  return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function parseValor(str){
+  if(typeof str === 'number') return str;
+  if(!str) return 0;
+  return parseFloat(str.toString().replace(/\s+/g,'').replace(/\./g,'').replace(',','.')) || 0;
+}
+function setStatus(id, msg, type){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + type;
+}
+
+function hasLetters(str){
+  return /[a-zA-ZÀ-ÿ]/.test(str);
+}
+
+function isTwoColumnPage(items, pageWidth){
+  const lines = {};
+  items.forEach(item=>{
+    const y = Math.round(item.transform[5]);
+    if(!lines[y]) lines[y] = [];
+    lines[y].push(item);
+  });
+  let bothSideRows = 0, highSideWithLetters = 0;
+  for(const y in lines){
+    const rowItems = lines[y];
+    const lowItems = rowItems.filter(it=>it.transform[4] < pageWidth*0.45);
+    const highItems = rowItems.filter(it=>it.transform[4] >= pageWidth*0.55);
+    if(lowItems.length && highItems.length){
+      bothSideRows++;
+      const highStr = highItems.sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join('');
+      if(hasLetters(highStr)) highSideWithLetters++;
+    }
+  }
+  if(bothSideRows < 6) return false;
+  return (highSideWithLetters/bothSideRows) > 0.3;
+}
+
+function findColumnSplit(items, pageWidth){
+  const xs = [...new Set(items.map(i=>Math.round(i.transform[4])))].sort((a,b)=>a-b);
+  let best = {gap:0, at:pageWidth/2};
+  for(let i=1;i<xs.length;i++){
+    const gap = xs[i]-xs[i-1];
+    const mid = (xs[i]+xs[i-1])/2;
+    if(mid > pageWidth*0.35 && mid < pageWidth*0.65 && gap > best.gap){
+      best = {gap, at: mid};
+    }
+  }
+  return best.gap > 5 ? best.at : pageWidth/2;
+}
+
+function renderColumnText(items){
+  const lines = {};
+  items.forEach(item=>{
+    const y = Math.round(item.transform[5]);
+    if(!lines[y]) lines[y] = [];
+    lines[y].push({x: item.transform[4], width: item.width || 0, str: item.str});
+  });
+  const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
+  let text = '';
+  ys.forEach(y=>{
+    const sorted = lines[y].sort((a,b)=>a.x-b.x);
+    let lineStr = '';
+    let prevEndX = null;
+    sorted.forEach(item=>{
+      if(prevEndX !== null){
+        const gap = item.x - prevEndX;
+        if(gap > 1.5) lineStr += ' ';
+      }
+      lineStr += item.str;
+      prevEndX = item.x + item.width;
+    });
+    text += lineStr + '\n';
+  });
+  return text;
+}
+
+async function extractPdfText(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  let fullText = '';
+  for(let pnum=1; pnum<=pdf.numPages; pnum++){
+    const page = await pdf.getPage(pnum);
+    const viewport = page.getViewport({scale:1});
+    const content = await page.getTextContent();
+    if(isTwoColumnPage(content.items, viewport.width)){
+      const splitX = findColumnSplit(content.items, viewport.width);
+      const left = content.items.filter(i=>i.transform[4] < splitX);
+      const right = content.items.filter(i=>i.transform[4] >= splitX);
+      fullText += renderColumnText(left) + renderColumnText(right);
+    } else {
+      fullText += renderColumnText(content.items);
+    }
+  }
+  return fullText;
+
+
+}
+
+function detectarCliente(fullText){
+  if(/VERONESI\s*[&E]\s*FILHOS/i.test(fullText)) return CONFIG_VERONESIFILHOS;
+  if(/VERONESI/i.test(fullText)) return CONFIG_LUIZ;
+  if(/SIMONT\s+MONTAGEM/i.test(fullText)) return CONFIG_SIMONT;
+  return null;
+}
+
+function detectarBanco(fullText){
+  if(/C6\s*BANK|C6\s*Business/i.test(fullText)) return 'C6';
+  if(/CART(Õ|O)ES\s*CAIXA/i.test(fullText)) return 'CAIXA';
+  if(/Cart[ãa]o\s*Ita[úu]\s*Empresas/i.test(fullText)) return 'ITAU';
+  if(/bradesco/i.test(fullText) && /extrato/i.test(fullText)) return 'BRADESCO';
+  return null;
+}
+
+// ---- Parser C6 Business ----
+function parseFaturaC6(fullText){
+  const mClose = fullText.match(/fechamento\s+desta\s+fatura\s+em\s+(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{2})/i);
+  let closingMonth = null, closingYear = null;
+  if(mClose){
+    closingMonth = parseInt(mClose[2]);
+    closingYear = 2000 + parseInt(mClose[3]);
+  } else {
+    const now = new Date();
+    closingMonth = now.getMonth()+1;
+    closingYear = now.getFullYear();
+  }
+
+  const vencimento = extrairVencimento(fullText);
+  const mTotal = fullText.match(/Total a pagar\s*R\$\s*([\d.,]+)/i);
+  const totalFatura = mTotal ? parseValor(mTotal[1]) : null;
+
+  const lines = fullText.split('\n');
+  const txs = [];
+  const lineRe = /^\s*(\d{1,2})\s+([a-zçãéô]{3})\s+(.+?)\s+(-\s?[\d]{1,3}(?:\.\d{3})*,\d{2}|[\d]{1,3}(?:\.\d{3})*,\d{2})\s*$/i;
+  for(const line of lines){
+    if(/subtotal deste cart/i.test(line)) continue;
+    const m = line.match(lineRe);
+    if(!m) continue;
+    const [, day, mesAbbr, descricaoRaw, valorStr] = m;
+    if(/pagamento fatura/i.test(descricaoRaw)) continue;
+    const mesNum = MESES[mesAbbr.toLowerCase()];
+    if(!mesNum) continue;
+    let ano = closingYear;
+    if(mesNum > closingMonth) ano = closingYear - 1;
+    const valorBruto = parseValor(valorStr);
+    const isEstorno = /estorno/i.test(descricaoRaw) || valorBruto < 0;
+    const isParcela = /parcela\s*\d+\s*\/\s*\d+/i.test(descricaoRaw);
+    const valor = Math.abs(valorBruto);
+    txs.push({
+      data: `${day.padStart(2,'0')}/${String(mesNum).padStart(2,'0')}/${ano}`,
+      descricao: descricaoRaw.replace(/\s+/g,' ').trim(),
+      valor,
+      tipo: isEstorno ? 'estorno' : 'compra',
+      forcaCaixa: isParcela && (ano < closingYear)
+    });
+  }
+  return {txs, vencimento, totalFatura};
+}
+
+// ---- Parser Cartões Caixa ----
+function parseFaturaCaixa(fullText){
+  const vencimento = extrairVencimento(fullText);
+  let refMonth = null, refYear = null;
+  const mVenc = vencimento && vencimento.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if(mVenc){ refMonth = parseInt(mVenc[2]); refYear = parseInt(mVenc[3]); }
+  else { const now = new Date(); refMonth = now.getMonth()+1; refYear = now.getFullYear(); }
+
+  const lines = fullText.split('\n');
+  const lineRe = /(\d{2})\/(\d{2})\s+(.+?)\s+([\d]{1,3}(?:\.\d{3})*,\d{2})([DC])\s*$/;
+  let state = 'none';
+  const txs = [];
+  let totalComprasLido = null, totalParceladasLido = null;
+
+  for(const raw of lines){
+    const line = raw.trim();
+    if(/COMPRAS PARCELADAS\s*\(Cart/i.test(line)){ state='parceladas'; continue; }
+    if(/COMPRAS\s*\(Cart/i.test(line)){ state='compras'; continue; }
+    if(/OUTROS\s*\(Cart/i.test(line) || /\bANUIDADE\b/i.test(line)){ state='skip'; continue; }
+    let mt;
+    if((mt = line.match(/Total\s+COMPRAS PARCELADAS\s+([\d.,]+)/i))){ totalParceladasLido = parseValor(mt[1]); state='none'; continue; }
+    if((mt = line.match(/Total\s+COMPRAS\b\s+([\d.,]+)/i))){ totalComprasLido = parseValor(mt[1]); state='none'; continue; }
+    if(/Total\s+(OUTROS|final)/i.test(line)){ state='none'; continue; }
+
+    if(state === 'compras' || state === 'parceladas'){
+      const m = line.match(lineRe);
+      if(!m) continue;
+      const [, dd, mm, descRaw, valorStr, dc] = m;
+      const mesNum = parseInt(mm);
+      let ano = refYear;
+      if(mesNum > refMonth) ano = refYear - 1;
+      const isParcela = /\d{1,2}\s*DE\s*\d{1,2}/i.test(descRaw);
+      const isEstorno = /estorno/i.test(descRaw);
+      const valor = parseValor(valorStr);
+      txs.push({
+        data: `${dd}/${mm}/${ano}`,
+        descricao: descRaw.replace(/\s+/g,' ').trim(),
+        valor,
+        tipo: isEstorno ? 'estorno' : 'compra',
+        forcaCaixa: isParcela && (ano < refYear)
+      });
+    }
+  }
+  const totalFatura = (totalComprasLido !== null && totalParceladasLido !== null) ? (totalComprasLido + totalParceladasLido) : null;
+  return {txs, vencimento, totalFatura};
+}
+
+function extrairDataMaisFrequente(fullText){
+  const allDates = fullText.match(/\b\d{2}\/\d{2}\/\d{4}\b/g) || [];
+  const freq = {};
+  allDates.forEach(d=>freq[d]=(freq[d]||0)+1);
+  const entry = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+  return entry ? entry[0] : '';
+}
+
+function extrairVencimento(fullText){
+  const lines = fullText.split('\n');
+  const found = [];
+  for(let i=0;i<lines.length;i++){
+    const windowText = (lines[i] + ' ' + (lines[i+1]||'')).trim();
+    const m = windowText.match(/Vencimento[\s\S]{0,40}?(\d{2}\/\d{2}\/\d{4})/i);
+    if(m) found.push(m[1]);
+  }
+  const freq = {};
+  found.forEach(d=>freq[d]=(freq[d]||0)+1);
+  const entry = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+  return entry ? entry[0] : extrairDataMaisFrequente(fullText);
+}
+
+// ---- Parser Itaú Empresas (SIMONT) ----
+// ---- Parser Bradesco Net Empresa (extrato de cartão) ----
+function parseFaturaBradesco(fullText, CONFIG, fileName){
+  // referência de mês/ano vem do nome do arquivo (ex: "04-2026"); sem isso, cai no mês/ano atual
+  let refMonth, refYear;
+  const mFile = (fileName||'').match(/(\d{2})[-_](\d{4})/);
+  if(mFile){
+    refMonth = parseInt(mFile[1]);
+    refYear = parseInt(mFile[2]);
+  } else {
+    const now = new Date();
+    refMonth = now.getMonth()+1;
+    refYear = now.getFullYear();
+  }
+
+  const mNome = fullText.match(/Nome:\s*(.+)/i);
+  const titular = mNome ? mNome[1].trim() : '';
+
+  const lines = fullText.split('\n');
+  const txs = [];
+  const txRe = /^(\d{2})\/(\d{2})\s+(.+?)\s+0,00\s+(-\s?[\d]{1,3}(?:\.\d{3})*,\d{2}|[\d]{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  for(const raw of lines){
+    const line = raw.trim();
+    if(/^Total:/i.test(line)) continue;
+    const m = line.match(txRe);
+    if(!m) continue;
+    const [, dd, mm, desc, valorStr] = m;
+    const mesNum = parseInt(mm);
+    let ano = refYear;
+    if(mesNum > refMonth) ano = refYear - 1;
+    const isParcela = /\d{3}\/\d{3}\s*$/.test(desc.trim());
+    const valorBruto = parseValor(valorStr);
+    const isEstorno = valorBruto < 0;
+    txs.push({
+      data: `${dd}/${mm}/${ano}`,
+      descricao: `${desc.trim()}${titular ? ' ('+titular+')' : ''}`,
+      valor: Math.abs(valorBruto),
+      tipo: isEstorno ? 'estorno' : 'compra',
+      forcaCaixa: isParcela && (ano < refYear)
+    });
+  }
+  const dataLancamento = `05/${String(refMonth).padStart(2,'0')}/${refYear}`;
+  return {txs, vencimento: dataLancamento, totalFatura: null};
+}
+
+// ---- Parser Cartões a Receber (D.C. TURISMO) ----
+function classificarBandeira(nome, CONFIG){
+  const n = nome.toUpperCase();
+  if(n.includes('PIX')) return CONFIG.contasPorBandeira.PIX;
+  if(n.includes('AMEX')) return CONFIG.contasPorBandeira.AMEX;
+  if(n.includes('VISA')) return n.includes('DEBITO') ? CONFIG.contasPorBandeira.VISA_DEBITO : CONFIG.contasPorBandeira.VISA_CREDITO;
+  if(n.includes('MASTER')) return n.includes('DEBITO') ? CONFIG.contasPorBandeira.MASTER_DEBITO : CONFIG.contasPorBandeira.MASTER_CREDITO;
+  if(n.includes('ELO')) return n.includes('DEBITO') ? CONFIG.contasPorBandeira.ELO_DEBITO : CONFIG.contasPorBandeira.ELO_CREDITO;
+  return null;
+}
+
+function detectarClienteXLSX(workbook){
+  const hasSheet = workbook.SheetNames.some(n => /CARTOES\s*A\s*RECEBER/i.test(n));
+  return hasSheet ? CONFIG_DCTURISMO : null;
+}
+
+function parseCartoesAReceberXLSX(workbook, CONFIG){
+  const sheetName = workbook.SheetNames.find(n => /^TOTAL\s*CARTOES\s*A\s*RECEBER/i.test(n)) || workbook.SheetNames.find(n => /CARTOES\s*A\s*RECEBER/i.test(n));
+  const sheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, defval:null});
+
+  let headerRowIdx = -1;
+  for(let i=0;i<rows.length;i++){
+    if(rows[i].some(c => typeof c === 'string' && /BANDEIRA/i.test(c))){
+      headerRowIdx = i;
+      break;
+    }
+  }
+  const txs = [];
+  const naoClassificadas = [];
+  if(headerRowIdx === -1) return {txs, naoClassificadas, periodo: ''};
+
+  const headerRow = rows[headerRowIdx];
+  let colBandeira=-1, colBaixados=-1, colEmitidos=-1, colEstornados=-1;
+  let periodo = '';
+  headerRow.forEach((cell, idx)=>{
+    if(typeof cell !== 'string') return;
+    if(/BANDEIRA/i.test(cell)) colBandeira = idx;
+    if(/BAIXADOS/i.test(cell)) colBaixados = idx;
+    if(/EMITIDOS/i.test(cell)){ colEmitidos = idx; const m = cell.match(/(\d{2})[\/-](\d{4})/); if(m) periodo = m[1]+'/'+m[2]; }
+    if(/ESTORNADOS/i.test(cell)) colEstornados = idx;
+  });
+
+  for(let i=headerRowIdx+1; i<rows.length; i++){
+    const row = rows[i];
+    if(!row) continue;
+    const bandeira = row[colBandeira];
+    if(!bandeira || typeof bandeira !== 'string') continue;
+    if(/^TOTAL$/i.test(bandeira.trim())) break;
+
+    const contaBandeira = classificarBandeira(bandeira, CONFIG);
+    if(!contaBandeira){
+      naoClassificadas.push(bandeira);
+      continue;
+    }
+
+    const emitidos = parseValor(row[colEmitidos]);
+    const baixados = parseValor(row[colBaixados]);
+    const estornados = parseValor(row[colEstornados]);
+
+    if(emitidos){
+      txs.push({
+        data: '', descricao: `${bandeira.trim()} - Emitidos`,
+        valor: Math.abs(emitidos), tipo: 'dctur_emitido',
+        debitoFixo: contaBandeira, creditoFixo: CONFIG.contaTransitoria, histFixo: CONFIG.histEmitidos
+      });
+    }
+    if(baixados){
+      txs.push({
+        data: '', descricao: `${bandeira.trim()} - Baixados`,
+        valor: Math.abs(baixados), tipo: 'dctur_baixado',
+        debitoFixo: CONFIG.contaTransitoria, creditoFixo: contaBandeira, histFixo: CONFIG.histBaixados
+      });
+    }
+    if(estornados){
+      const valorAbs = Math.abs(estornados);
+      txs.push({
+        data: '', descricao: `${bandeira.trim()} - Estorno`,
+        valor: valorAbs, tipo: 'dctur_estorno_debito',
+        debitoFixo: contaBandeira, creditoFixo: CONFIG.contaTransitoria, histFixo: CONFIG.histEstornoDebito
+      });
+    }
+  }
+  let ultimoDia = '';
+  if(periodo){
+    const [mm, yyyy] = periodo.split('/').map(Number);
+    const lastDay = new Date(yyyy, mm, 0).getDate();
+    ultimoDia = `${String(lastDay).padStart(2,'0')}/${String(mm).padStart(2,'0')}/${yyyy}`;
+  }
+  return {txs, naoClassificadas, periodo, ultimoDia};
+}
+
+function parseFaturaItau(fullText, CONFIG){
+  const vencimento = extrairVencimento(fullText);
+  const mConta = fullText.match(/Numero da conta\s+([\d]{3,4})\.?X*/i);
+  const contaLabel = mConta ? mConta[1] : '';
+
+  const mTotal = fullText.match(/Total\s+dos\s+lançamentos\s+atuais\s+([\d.,]+)/i) || fullText.match(/Total\s+desta\s+fatura\s+([\d.,]+)/i);
+  const totalFatura = mTotal ? parseValor(mTotal[1]) : null;
+
+  const lines = fullText.split('\n');
+  let activeCard = null;
+  const txs = [];
+  const headerRe = /\(final\s*(\d{3,4})\)/i;
+  const closeRe = /Lançamentos no cartão \(final (\d{3,4})\)\s+([\d.,]+)/i;
+  const txRe = /^(\d{2})\/(\d{2})\s+(.+?)\s+(-\s?[\d]{1,3}(?:\.\d{3})*,\d{2}|[\d]{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  const skipSectionRe = /Lançamentos:\s*produtos e serviços|Compras parceladas - próximas faturas/i;
+
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line) continue;
+    let m;
+    if((m = line.match(closeRe))){
+      activeCard = null;
+      continue;
+    }
+    if(skipSectionRe.test(line)){
+      activeCard = null;
+      continue;
+    }
+    if((m = line.match(headerRe)) && !/lançamentos no cartão/i.test(line)){
+      activeCard = m[1];
+      continue;
+    }
+    if(activeCard && (m = line.match(txRe))){
+      const [, dd, mm, desc, valorStr] = m;
+      const valorBruto = parseValor(valorStr);
+      const contaDespesa = CONFIG.contasPorCartaoFinal[activeCard];
+      const isEstorno = valorBruto < 0;
+      if(isEstorno){
+        txs.push({
+          data: vencimento,
+          origData: `${dd}/${mm}`,
+          descricao: `${desc.trim()} (cartão final ${activeCard})`,
+          valor: Math.abs(valorBruto),
+          tipo: contaDespesa ? 'cartao_estorno' : 'cartao_desconhecido',
+          debitoFixo: CONFIG.contaCartao,
+          creditoFixo: contaDespesa || null,
+          complementoFixo: `${activeCard}`
+        });
+      } else {
+        txs.push({
+          data: vencimento,
+          origData: `${dd}/${mm}`,
+          descricao: `${desc.trim()} (cartão final ${activeCard})`,
+          valor: valorBruto,
+          tipo: contaDespesa ? 'cartao_despesa' : 'cartao_desconhecido',
+          debitoFixo: contaDespesa || null,
+          complementoFixo: `${activeCard}`
+        });
+      }
+    }
+  }
+
+  return {txs, vencimento, totalFatura: null};
+}
+
+function classificarTransacao(tx){
+  const CONFIG = activeConfig;
+  if(tx.tipo === 'dctur_emitido' || tx.tipo === 'dctur_baixado' || tx.tipo === 'dctur_estorno_debito'){
+    return {debito: tx.debitoFixo, credito: tx.creditoFixo, hist: tx.histFixo};
+  }
+  if(tx.tipo === 'cartao_despesa'){
+    return {debito: tx.debitoFixo, credito: CONFIG.contaCartao, hist: CONFIG.historico};
+  }
+  if(tx.tipo === 'cartao_estorno'){
+    return {debito: tx.debitoFixo, credito: tx.creditoFixo, hist: CONFIG.historico};
+  }
+  if(tx.tipo === 'cartao_desconhecido'){
+    return {debito: '???', credito: CONFIG.contaCartao, hist: CONFIG.historico};
+  }
+  if(tx.tipo === 'cartao_credito'){
+    return {debito: '', credito: tx.creditoFixo, hist: CONFIG.historico};
+  }
+  if(tx.tipo === 'estorno'){
+    return {debito: CONFIG.contaCartao, credito: CONFIG.contaCaixa, hist: CONFIG.histCaixa};
+  }
+  let fornecedorConta = null;
+  if(!tx.forcaCaixa){
+    const mapa = CONFIG.mapeamentos.find(m => tx.descricao.toLowerCase().includes(m.padrao.toLowerCase()));
+    if(mapa) fornecedorConta = mapa.contaFornecedor;
+  }
+  if(fornecedorConta){
+    return {debito: fornecedorConta, credito: CONFIG.contaCartao, hist: CONFIG.histFornecedor};
+  }
+  return {debito: CONFIG.contaCaixa, credito: CONFIG.contaCartao, hist: CONFIG.histCaixa};
+}
+
+function renderTxSummary(){
+  const resumoCard = document.getElementById('resumoCard');
+  if(transacoes.length === 0){
+    resumoCard.style.display = 'none';
+    return;
+  }
+  resumoCard.style.display = 'block';
+  const bancoLabel = {C6:'C6 Business', CAIXA:'Cartões Caixa', ITAU:'Itaú Empresas', DCTUR_XLSX:'Cartões a Receber', BRADESCO:'Bradesco Net Empresa'}[bancoAtual] || '';
+  document.getElementById('bancoDetectado').textContent = bancoLabel;
+  let totCompras = 0, totEstornos = 0;
+  const mirrorTipos = ['cartao_credito', 'dctur_baixado'];
+  const estornoTipos = ['estorno', 'cartao_estorno', 'dctur_estorno_debito'];
+  const tbody = document.getElementById('txTableBody');
+  tbody.innerHTML = '';
+  transacoes.forEach(tx=>{
+    const {debito, credito, hist} = classificarTransacao(tx);
+    const isEstorno = estornoTipos.includes(tx.tipo);
+    const isMirror = mirrorTipos.includes(tx.tipo);
+    if(isEstorno) totEstornos += tx.valor;
+    else if(!isMirror) totCompras += tx.valor;
+    const tr = document.createElement('tr');
+    if(isEstorno) tr.className = 'estorno';
+    let tipoLabel = 'Compra';
+    if(isEstorno) tipoLabel = 'Estorno';
+    else if(tx.tipo === 'cartao_despesa') tipoLabel = 'Despesa cartão';
+    else if(tx.tipo === 'cartao_desconhecido') tipoLabel = 'Cartão não mapeado';
+    else if(tx.tipo === 'cartao_credito') tipoLabel = 'Crédito fatura';
+    else if(tx.tipo === 'dctur_emitido') tipoLabel = 'Emitidos';
+    else if(tx.tipo === 'dctur_baixado') tipoLabel = 'Baixados';
+    const badgeClass = isEstorno ? 'estorno' : (tx.tipo === 'cartao_desconhecido' ? 'estorno' : 'compra');
+    tr.innerHTML = `
+      <td>${tx.data}</td>
+      <td>${tx.descricao}</td>
+      <td><span class="badge ${badgeClass}">${tipoLabel}</span></td>
+      <td>${debito}</td>
+      <td>${credito}</td>
+      <td>${hist}</td>
+      <td class="num">${fmtBRL(tx.valor)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('resLancamentos').textContent = transacoes.length;
+  document.getElementById('totCompras').textContent = fmtBRL(totCompras);
+  document.getElementById('totEstornos').textContent = fmtBRL(totEstornos);
+  document.getElementById('totLiquido').textContent = fmtBRL(totCompras - totEstornos);
+
+  const confEl = document.getElementById('conferenciaStatus');
+  if(totalFaturaLida !== null){
+    const liquido = totCompras - totEstornos;
+    const diff = Math.abs(liquido - totalFaturaLida);
+    if(diff < 0.01){
+      confEl.className = 'status ok';
+      confEl.textContent = bancoAtual === 'CAIXA'
+        ? `Confere com o subtotal de Compras + Compras Parceladas da fatura (${fmtBRL(totalFaturaLida)}).`
+        : `Confere com o valor da fatura (${fmtBRL(totalFaturaLida)}).`;
+    } else {
+      confEl.className = 'status err';
+      confEl.textContent = `Atenção: esperado ${fmtBRL(totalFaturaLida)}, mas os lançamentos somam ${fmtBRL(liquido)}. Confira os detalhes.`;
+    }
+  } else {
+    confEl.textContent = '';
+  }
+}
+
+document.getElementById('btnVerDetalhes').addEventListener('click', ()=>{
+  const wrap = document.getElementById('detalhesWrap');
+  const btn = document.getElementById('btnVerDetalhes');
+  const isHidden = wrap.style.display === 'none';
+  wrap.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? 'Ocultar detalhes' : 'Ver detalhes dos lançamentos';
+});
+
+document.getElementById('btnLimparTudo').addEventListener('click', ()=>{
+  transacoes = [];
+  totalFaturaLida = null;
+  bancoAtual = '';
+  activeConfig = null;
+  document.getElementById('genData').value = '';
+  document.getElementById('genPreview').value = '';
+  renderTxSummary();
+  setStatus('faturaStatus', 'Tudo limpo. Pode enviar a próxima fatura.', 'ok');
+});
+
+document.getElementById('faturaFile').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files || []);
+  if(files.length === 0) return;
+  setStatus('faturaStatus','Lendo a fatura...', 'hint');
+  let totalLidas = 0;
+  let totalDuplicadas = 0;
+  let nomesBanco = new Set();
+  try{
+    for(const file of files){
+      const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+
+      if(isExcel){
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, {type:'array'});
+        const cliente = detectarClienteXLSX(wb);
+        if(!cliente){
+          setStatus('faturaStatus',`Não reconheci o cliente/relatório do arquivo "${file.name}". Me avisa que eu ajusto a leitura para esse formato.`,'err');
+          continue;
+        }
+        const {txs, naoClassificadas, periodo, ultimoDia} = parseCartoesAReceberXLSX(wb, cliente);
+        if(txs.length === 0){
+          setStatus('faturaStatus',`Não encontrei linhas de bandeiras em "${file.name}".`,'err');
+          continue;
+        }
+        if(naoClassificadas.length > 0){
+          setStatus('faturaStatus',`Atenção: não consegui classificar ${naoClassificadas.length} bandeira(s): ${naoClassificadas.join(', ')}. Elas ficaram de fora.`,'err');
+        }
+        activeConfig = cliente;
+        bancoAtual = 'DCTUR_XLSX';
+        const resAdd1 = adicionarTransacoesSemDuplicar(txs);
+        if(ultimoDia) document.getElementById('genData').value = ultimoDia;
+        document.getElementById('genFilial').value = cliente.filialPadrao;
+        totalLidas += resAdd1.adicionadas;
+        totalDuplicadas += resAdd1.duplicadas;
+        nomesBanco.add('Cartões a Receber' + (periodo ? ' ' + periodo : ''));
+        continue;
+      }
+
+      const text = await extractPdfText(file);
+      const cliente = detectarCliente(text);
+      const banco = detectarBanco(text);
+      if(!cliente || !banco){
+        setStatus('faturaStatus',`Não reconheci o cliente/banco do arquivo "${file.name}". Me avisa que eu ajusto a leitura para esse formato.`,'err');
+        continue;
+      }
+      let resultado;
+      if(banco === 'C6') resultado = parseFaturaC6(text);
+      else if(banco === 'CAIXA') resultado = parseFaturaCaixa(text);
+      else if(banco === 'BRADESCO') resultado = parseFaturaBradesco(text, cliente, file.name);
+      else resultado = parseFaturaItau(text, cliente);
+
+      const {txs, vencimento, totalFatura} = resultado;
+      if(txs.length === 0){
+        setStatus('faturaStatus',`Não encontrei transações em "${file.name}". Confere se o PDF está completo/sem senha, ou me avisa que eu ajusto.`,'err');
+        continue;
+      }
+      activeConfig = cliente;
+      bancoAtual = banco;
+      const resAdd2 = adicionarTransacoesSemDuplicar(txs);
+      if(totalFatura !== null) totalFaturaLida = (totalFaturaLida || 0) + totalFatura;
+      if(vencimento) document.getElementById('genData').value = vencimento;
+      document.getElementById('genFilial').value = cliente.filialPadrao;
+      totalLidas += resAdd2.adicionadas;
+      totalDuplicadas += resAdd2.duplicadas;
+      nomesBanco.add(banco);
+    }
+    renderTxSummary();
+    if(totalLidas > 0 || totalDuplicadas > 0){
+      const dupTxt = totalDuplicadas > 0 ? ` (${totalDuplicadas} duplicata(s) ignorada(s) — já constavam no lote)` : '';
+      setStatus('faturaStatus', `${totalLidas} lançamento(s) novo(s) lidos de ${files.length} arquivo(s) (${[...nomesBanco].join(', ')})${dupTxt}.`, totalDuplicadas > 0 ? 'err' : 'ok');
+    }
+  }catch(err){
+    console.error(err);
+    setStatus('faturaStatus','Erro ao ler um dos arquivos. Confirme que os PDFs não estão protegidos por senha.','err');
+  }
+  e.target.value='';
+});
+
+function buildLines(){
+  const data = document.getElementById('genData').value.trim();
+  const filial = document.getElementById('genFilial').value.trim();
+  const lines = [];
+  transacoes.forEach(tx=>{
+    const {debito, credito, hist} = classificarTransacao(tx);
+    const valorBR = tx.valor.toFixed(2).replace('.', ',');
+    const complemento = tx.complementoFixo || '';
+    const campos = [data, debito, credito, valorBR, hist, complemento, '1', filial, '', ''];
+    lines.push(campos.join(';'));
+  });
+  return lines;
+}
+
+document.getElementById('btnGerar').addEventListener('click', ()=>{
+  if(!transacoes.length){ setStatus('genStatus','Envie uma fatura primeiro.','err'); return; }
+  if(!document.getElementById('genData').value.trim()){ setStatus('genStatus','Informe a data do lançamento.','err'); return; }
+  const lines = buildLines();
+  document.getElementById('genPreview').value = lines.join('\n');
+
+  const blob = new Blob([lines.join('\r\n') + '\r\n'], {type:'text/plain;charset=iso-8859-1'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lanctos.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setStatus('genStatus', lines.length + ' linhas geradas e baixadas.', 'ok');
+});
+</script>
+
+</body>
+</html>

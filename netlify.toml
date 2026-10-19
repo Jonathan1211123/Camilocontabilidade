@@ -1,0 +1,18 @@
+[build]
+  command = "npm run prepare-site"
+  publish = "public"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+[functions."tool"]
+  included_files = ["private/tools/*.html"]
+[[redirects]]
+  from = "/Painel_de_Ferramentas_Completo%20(1).html"
+  to = "/"
+  status = 302
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
+    X-Frame-Options = "SAMEORIGIN"
