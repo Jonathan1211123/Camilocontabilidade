@@ -25,8 +25,8 @@ test('restores personal fields and storage, saves changes without passwords or f
     assert.equal(win.localStorage.getItem('verification'), '1');
     empresa.value = '456';
     win.localStorage.setItem('override', 'saved');
-    win.document.querySelector('button')!.click();
-    await new Promise(resolve => setTimeout(resolve, 10));
+    empresa.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 1100));
     assert.equal(calls.length, 1);
     assert.deepEqual(calls[0].state.fields['id:empresa'], { value: '456', checked: false });
     assert.equal(calls[0].state.storage.override, 'saved');
@@ -38,10 +38,11 @@ test('restores personal fields and storage, saves changes without passwords or f
 test('a version conflict prevents overwriting a newer saved state', async () => {
   const { dom, win, calls } = await setup({ fields: {}, storage: {} }, async () => Response.json({ error: 'Conflito de versão.' }, { status: 409 }));
   try {
-    win.document.querySelector('button')!.click();
-    await new Promise(resolve => setTimeout(resolve, 10));
+    win.localStorage.setItem('first', 'value');
+    await new Promise(resolve => setTimeout(resolve, 1100));
     assert.equal(calls.length, 1);
-    assert.equal((win.document.querySelector('button') as HTMLButtonElement).disabled, true);
-    assert.match(win.document.querySelector('[role=status]')!.textContent!, /Recarregue/);
+    win.localStorage.setItem('second', 'value');
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    assert.equal(calls.length, 1);
   } finally { dom.window.close(); }
 });
