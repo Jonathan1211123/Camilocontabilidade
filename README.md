@@ -10,7 +10,7 @@ O botão **Esqueci minha senha** envia um link de recuperação. Links antigos d
 
 ## Dados das ferramentas
 
-Cada usuário possui seus próprios campos, configurações e marcações, salvos automaticamente no Netlify Database. O botão **Salvar agora** permite salvar imediatamente ou repetir uma tentativa que falhou. Ao abrir uma ferramenta, os dados da conta são recuperados antes de executar seu código. As marcações de fornecedores e ajustes da folha que anteriormente ficavam no navegador passam a usar esse armazenamento por conta.
+Cada usuário possui seus próprios campos, configurações e marcações, salvos automaticamente no Netlify Database. O salvamento acontece automaticamente após as alterações, sem uma faixa no topo das ferramentas. Ao abrir uma ferramenta, os dados da conta são recuperados antes de executar seu código. As marcações de fornecedores e ajustes da folha que anteriormente ficavam no navegador passam a usar esse armazenamento por conta.
 
 PDFs e planilhas de origem, resultados calculados em memória e arquivos exportados não são armazenados. Os arquivos de origem devem ser selecionados novamente para recalcular os resultados. Campos de senha e seleção de arquivos são excluídos do salvamento.
 
