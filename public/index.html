@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Ferramentas — Camilo Contabilidade</title>
+<style>
+  :root{
+    --navy: #10233f;
+    --navy-2: #16305a;
+    --gold: #c9a227;
+    --gold-2: #e4c765;
+    --bg: #eef1f6;
+    --line: #dde3ec;
+    --text: #1c2733;
+    --muted: #6b7789;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family: Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+  }
+  header{
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff;
+    padding:18px 26px 0;
+    border-bottom:4px solid var(--gold);
+    flex-shrink:0;
+  }
+  header .brand{display:flex; flex-direction:column; margin-bottom:14px;}
+  header .brand small{color:var(--gold-2); letter-spacing:.03em; font-size:12px;}
+  header .brand h1{margin:2px 0 0; font-size:20px; font-weight:700;}
+
+  nav{display:flex; gap:4px; flex-wrap:wrap;}
+  nav button{
+    appearance:none;
+    border:none;
+    background:rgba(255,255,255,.08);
+    color:#dce3ef;
+    padding:11px 18px;
+    font-size:13.5px;
+    font-weight:600;
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    transition:.15s background, .15s color;
+  }
+  nav button:hover{background:rgba(255,255,255,.16); color:#fff;}
+  nav button.active{background:var(--bg); color:var(--navy);}
+
+  main{flex:1; min-height:0; position:relative;}
+  .pane{
+    position:absolute;
+    inset:0;
+    display:none;
+  }
+  .pane.active{display:block;}
+  .pane iframe{
+    width:100%;
+    height:100%;
+    border:none;
+    display:block;
+    background:#fff;
+  }
+  .loading{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:14px;
+  }
+
+  .home{
+    height:100%;
+    overflow:auto;
+    padding:40px 6vw 60px;
+    box-sizing:border-box;
+  }
+  .home-hero{
+    max-width:720px;
+    margin:0 auto 34px;
+  }
+  .home-eyebrow{
+    display:block;
+    font-size:12px;
+    letter-spacing:.08em;
+    color:var(--gold-2);
+    background:var(--navy);
+    padding:5px 12px;
+    border-radius:20px;
+    width:fit-content;
+    margin-bottom:16px;
+  }
+  .home-hero h2{
+    font-size:28px;
+    margin:0 0 10px;
+    color:var(--navy);
+  }
+  .home-hero p{
+    font-size:15px;
+    color:var(--muted);
+    line-height:1.6;
+    margin:0;
+  }
+  .home-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+    max-width:1000px;
+    margin:0 auto 30px;
+  }
+  .home-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px;
+  }
+  .home-card h3{
+    margin:0 0 10px;
+    font-size:14.5px;
+    color:var(--navy);
+  }
+  .home-card p{
+    margin:0;
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.55;
+  }
+  .home-tools{
+    max-width:1000px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px 24px;
+  }
+  .home-tools h3{
+    margin:0 0 14px;
+    font-size:15px;
+    color:var(--navy);
+    border-left:4px solid var(--gold);
+    padding-left:10px;
+  }
+  .home-tools ul{
+    margin:0;
+    padding-left:20px;
+    font-size:13.5px;
+    color:var(--text);
+    line-height:1.9;
+  }
+  @media (max-width:800px){
+    .home-grid{ grid-template-columns:1fr; }
+  }
+</style>
+<link rel="stylesheet" href="/auth.css">
+</head>
+<body>
+<section id="auth" class="auth-shell" aria-labelledby="auth-title">
+  <aside class="auth-brand"><span class="auth-eyebrow">CAMILO CONTABILIDADE</span><h1>Seu trabalho,<br>em um só lugar.</h1><p>Ferramentas para a rotina contábil.<br>Crie sua conta e acesse suas ferramentas.</p><span class="auth-since">CONTABILIDADE DESDE 1969</span></aside>
+  <div class="auth-card">
+    <span class="auth-eyebrow">PAINEL DE FERRAMENTAS</span>
+    <h2 id="auth-title">Acesse sua conta</h2>
+    <p id="auth-description">Entre com seu e-mail e senha.</p>
+    <form id="auth-form">
+      <label id="email-label" for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="username" required>
+      <label id="password-label" for="password">Senha</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button id="submit" type="submit" disabled>Verificando acesso…</button>
+    </form>
+    <p id="auth-message" role="status" aria-live="polite"></p>
+    <button id="signup" class="text-button" type="button">Criar minha conta</button>
+    <button id="forgot" class="text-button" type="button">Esqueci minha senha</button>
+    <button id="back" class="text-button" type="button" hidden>Voltar para o login</button>
+    <p class="auth-help">Cadastro aberto. Seus dados ficam salvos na sua conta.</p>
+  </div>
+</section>
+
+
+<div id="workspace" hidden><div class="session"><span id="account-email"></span><button id="logout" type="button">Sair</button></div><header>
+  <div class="brand">
+    <small>CAMILO CONTABILIDADE</small>
+    <h1>Painel de Ferramentas</h1>
+  </div>
+  <nav id="tabs"></nav>
+</header>
+
+<main id="panes"></main>
+
+
+
+</div>
+<script type="module" src="/auth.js"></script>
+</body>
+</html>
